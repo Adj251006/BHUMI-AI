@@ -1,0 +1,23 @@
+# Core web framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# Database ORM and migrations
+sqlalchemy>=2.0.0
+alembic>=1.13.0
+
+# PostGIS geometry support for SQLAlchemy
+geoalchemy2>=0.14.0
+
+# Async PostgreSQL driver — used by SQLAlchemy's async engine in the
+# FastAPI application (app/database.py). Required for all runtime DB access.
+asyncpg>=0.29.0
+
+# Sync PostgreSQL driver — used by Alembic's synchronous migration runner
+# (alembic/env.py) and the seed script (scripts/seed.py).
+# Cannot use asyncpg here because Alembic runs migrations synchronously.
+psycopg2-binary>=2.9.0
+
+# Settings management (loads .env into typed config)
+pydantic-settings>=2.1.0
+python-dotenv>=1.0.0
