@@ -36,6 +36,8 @@ async def lifespan(app: FastAPI):
     print("✓ Database connections closed")
 
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(
     title="National Land Acquisition & Management System",
     description=(
@@ -48,9 +50,20 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Register routers
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 app.include_router(proposals_router, prefix="/proposals", tags=["Proposals"])
+
+from app.parcels.router import router as parcels_router
+app.include_router(parcels_router, prefix="/api/parcels", tags=["Parcels"])
 
 
 
