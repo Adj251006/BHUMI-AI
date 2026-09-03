@@ -14,6 +14,7 @@ from sqlalchemy import text
 
 from app.auth.router import router as auth_router
 from app.database import engine
+from app.proposals.router import router as proposals_router
 
 
 @asynccontextmanager
@@ -49,6 +50,8 @@ app = FastAPI(
 
 # Register routers
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
+app.include_router(proposals_router, prefix="/proposals", tags=["Proposals"])
+
 
 
 
