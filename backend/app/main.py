@@ -12,6 +12,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sqlalchemy import text
 
+from app.auth.router import router as auth_router
 from app.database import engine
 
 
@@ -45,6 +46,10 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# Register routers
+app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
+
 
 
 @app.get("/health", tags=["System"])

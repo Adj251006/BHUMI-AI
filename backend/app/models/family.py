@@ -48,7 +48,7 @@ class Family(TimestampMixin, AuditMixin, Base):
         comment="Annual household income in INR (for R&R eligibility)",
     )
     r_and_r_status: Mapped[RAndRStatus] = mapped_column(
-        Enum(RAndRStatus, name="r_and_r_status", native_enum=True),
+        Enum(RAndRStatus, name="r_and_r_status", native_enum=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=RAndRStatus.IDENTIFIED,
         index=True,

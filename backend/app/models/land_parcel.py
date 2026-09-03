@@ -60,7 +60,7 @@ class LandParcel(TimestampMixin, AuditMixin, Base):
         comment="Revenue survey number (e.g., SY-42/1A)",
     )
     land_type: Mapped[LandType] = mapped_column(
-        Enum(LandType, name="land_type", native_enum=True),
+        Enum(LandType, name="land_type", native_enum=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
     )
     area_hectares: Mapped[Decimal] = mapped_column(
@@ -84,11 +84,11 @@ class LandParcel(TimestampMixin, AuditMixin, Base):
 
     # Ownership and acquisition status
     ownership_type: Mapped[OwnershipType | None] = mapped_column(
-        Enum(OwnershipType, name="ownership_type", native_enum=True),
+        Enum(OwnershipType, name="ownership_type", native_enum=True, values_callable=lambda x: [e.value for e in x]),
         nullable=True,
     )
     possession_status: Mapped[PossessionStatus] = mapped_column(
-        Enum(PossessionStatus, name="possession_status", native_enum=True),
+        Enum(PossessionStatus, name="possession_status", native_enum=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=PossessionStatus.NOT_ACQUIRED,
         index=True,

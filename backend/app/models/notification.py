@@ -34,7 +34,7 @@ class Notification(TimestampMixin, AuditMixin, Base):
         index=True,
     )
     notice_type: Mapped[NoticeType] = mapped_column(
-        Enum(NoticeType, name="notice_type", native_enum=True),
+        Enum(NoticeType, name="notice_type", native_enum=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         index=True,
     )

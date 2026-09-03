@@ -43,7 +43,7 @@ class Project(TimestampMixin, AuditMixin, Base):
         nullable=True,
     )
     status: Mapped[ProjectStatus] = mapped_column(
-        Enum(ProjectStatus, name="project_status", native_enum=True),
+        Enum(ProjectStatus, name="project_status", native_enum=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=ProjectStatus.PLANNING,
         index=True,

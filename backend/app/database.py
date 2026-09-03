@@ -25,11 +25,13 @@ def _to_async_url(url: str) -> str:
 
     Examples:
         postgresql://user:pass@host/db  →  postgresql+asyncpg://user:pass@host/db
-        postgresql+asyncpg://...        →  (unchanged)
+        ?sslmode=require               →  ?ssl=require (asyncpg parameter)
     """
-    if "asyncpg" in url:
-        return url
-    return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    if "asyncpg" not in url:
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    if "sslmode=" in url:
+        url = url.replace("sslmode=", "ssl=")
+    return url
 
 
 # ---------------------------------------------------------------------------

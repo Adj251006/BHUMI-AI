@@ -41,7 +41,7 @@ class Proposal(TimestampMixin, AuditMixin, Base):
         comment="User who created/submitted this proposal",
     )
     status: Mapped[ProposalStatus] = mapped_column(
-        Enum(ProposalStatus, name="proposal_status", native_enum=True),
+        Enum(ProposalStatus, name="proposal_status", native_enum=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=ProposalStatus.DRAFT,
         index=True,
@@ -52,7 +52,7 @@ class Proposal(TimestampMixin, AuditMixin, Base):
         comment="Detailed purpose / justification for the acquisition",
     )
     urgency: Mapped[Urgency] = mapped_column(
-        Enum(Urgency, name="urgency", native_enum=True),
+        Enum(Urgency, name="urgency", native_enum=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=Urgency.NORMAL,
     )

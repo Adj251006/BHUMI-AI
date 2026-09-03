@@ -7,13 +7,13 @@ asyncpg driver is used only by the FastAPI application (app/database.py).
 Key setup:
 1. Imports app.config.settings to get DATABASE_URL from .env
 2. Imports all models via app.models to register them with Base.metadata
-3. Overrides the alembic.ini sqlalchemy.url with the real DATABASE_URL
+3. Creates the engine directly from DATABASE_URL (bypassing alembic.ini)
 """
 
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import create_engine, pool
 
 # Import GeoAlchemy2 so its column types are registered with Alembic's
 # autogenerate — without this, Geometry columns won't render correctly.
@@ -32,12 +32,13 @@ from app.config import settings
 # ---------------------------------------------------------------------------
 config = context.config
 
-# Override the placeholder URL from alembic.ini with the real one from .env.
+# Build the sync database URL.
 # We strip any async driver prefix since Alembic uses psycopg2 (sync).
+# NOTE: We do NOT use config.set_main_option() because configparser
+# treats '%' as interpolation syntax, which breaks URL-encoded passwords.
 db_url = settings.database_url
 if "+asyncpg" in db_url:
     db_url = db_url.replace("+asyncpg", "")
-config.set_main_option("sqlalchemy.url", db_url)
 
 # Set up Python logging from alembic.ini's [loggers] section
 if config.config_file_name is not None:
@@ -59,9 +60,8 @@ def run_migrations_offline() -> None:
     Generates SQL scripts without connecting to the database.
     Useful for review or manual application.
     """
-    url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=url,
+        url=db_url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -74,14 +74,11 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
-    Connects to the database and applies migrations directly.
+    Creates the engine directly from the URL (not via configparser)
+    to avoid issues with special characters in passwords.
     Uses NullPool to avoid holding connections after migration completes.
     """
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    connectable = create_engine(db_url, poolclass=pool.NullPool)
 
     with connectable.connect() as connection:
         context.configure(
@@ -97,3 +94,4 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
+

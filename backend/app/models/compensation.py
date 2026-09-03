@@ -60,7 +60,7 @@ class Compensation(TimestampMixin, AuditMixin, Base):
         comment="NEFT/RTGS/UPI reference number",
     )
     status: Mapped[CompensationStatus] = mapped_column(
-        Enum(CompensationStatus, name="compensation_status", native_enum=True),
+        Enum(CompensationStatus, name="compensation_status", native_enum=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=CompensationStatus.PENDING,
         index=True,

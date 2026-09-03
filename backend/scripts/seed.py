@@ -45,6 +45,8 @@ def _sync_url(url: str) -> str:
     return url.replace("+asyncpg", "")
 
 
+from app.auth.security import hash_password
+
 def seed() -> None:
     """Populate the database with sample data."""
     engine = create_engine(_sync_url(settings.database_url), echo=False)
@@ -60,6 +62,7 @@ def seed() -> None:
             return
 
         now = datetime.now(timezone.utc)
+        default_pwd_hash = hash_password("Test@1234")
 
         # ==============================================================
         # USERS — one per role
@@ -68,8 +71,7 @@ def seed() -> None:
             "central": User(
                 id=uuid.uuid4(),
                 email="admin@mord.gov.in",
-                # Placeholder hash — Module 2 will add proper bcrypt hashing.
-                password_hash="$placeholder$_not_a_real_hash",
+                password_hash=default_pwd_hash,
                 full_name="Rajesh Kumar",
                 role=UserRole.CENTRAL_MINISTRY,
                 state=None,
@@ -79,7 +81,7 @@ def seed() -> None:
             "state": User(
                 id=uuid.uuid4(),
                 email="collector@maharashtra.gov.in",
-                password_hash="$placeholder$_not_a_real_hash",
+                password_hash=default_pwd_hash,
                 full_name="Priya Sharma",
                 role=UserRole.STATE_GOVT,
                 state="Maharashtra",
@@ -89,7 +91,7 @@ def seed() -> None:
             "district": User(
                 id=uuid.uuid4(),
                 email="dc@pune.gov.in",
-                password_hash="$placeholder$_not_a_real_hash",
+                password_hash=default_pwd_hash,
                 full_name="Amit Patel",
                 role=UserRole.DISTRICT_AUTHORITY,
                 state="Maharashtra",
@@ -99,7 +101,7 @@ def seed() -> None:
             "agency": User(
                 id=uuid.uuid4(),
                 email="pm@nhai.gov.in",
-                password_hash="$placeholder$_not_a_real_hash",
+                password_hash=default_pwd_hash,
                 full_name="Sunita Reddy",
                 role=UserRole.PROJECT_AGENCY,
                 state="Maharashtra",
