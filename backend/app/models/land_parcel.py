@@ -11,9 +11,13 @@ Leaflet.js / OpenStreetMap tiles, which expect lat/lon coordinates.
 import uuid
 from decimal import Decimal
 
+# pyrefly: ignore [missing-import]
 from geoalchemy2 import Geometry
+# pyrefly: ignore [missing-import]
 from sqlalchemy import Enum, ForeignKey, Index, Numeric, String
+# pyrefly: ignore [missing-import]
 from sqlalchemy.dialects.postgresql import UUID
+# pyrefly: ignore [missing-import]
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import AuditMixin, Base, TimestampMixin

@@ -13,10 +13,12 @@ Key setup:
 from logging.config import fileConfig
 
 from alembic import context
+# pyrefly: ignore [missing-import]
 from sqlalchemy import create_engine, pool
 
 # Import GeoAlchemy2 so its column types are registered with Alembic's
 # autogenerate — without this, Geometry columns won't render correctly.
+# pyrefly: ignore [missing-import]
 import geoalchemy2  # noqa: F401
 
 # Import all models to register them with Base.metadata.

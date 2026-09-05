@@ -11,8 +11,11 @@ Create Date: 2026-09-03
 from typing import Sequence, Union
 
 from alembic import op
+# pyrefly: ignore [missing-import]
 import sqlalchemy as sa
+# pyrefly: ignore [missing-import]
 from sqlalchemy.dialects import postgresql
+# pyrefly: ignore [missing-import]
 import geoalchemy2
 
 

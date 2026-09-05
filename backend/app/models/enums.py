@@ -25,12 +25,18 @@ class UserRole(str, enum.Enum):
     - state_govt: State-level authority (e.g., State Revenue Secretary).
     - district_authority: District Collector / Deputy Commissioner.
     - project_agency: The agency executing the project (e.g., NHAI).
+    - field_officer: Field-level officer for on-ground verification.
+    - auditor: Read-only access to all data for audit purposes.
+    - citizen: Landowner/affected party — can only view their own case.
     """
 
     CENTRAL_MINISTRY = "central_ministry"
     STATE_GOVT = "state_govt"
     DISTRICT_AUTHORITY = "district_authority"
     PROJECT_AGENCY = "project_agency"
+    FIELD_OFFICER = "field_officer"
+    AUDITOR = "auditor"
+    CITIZEN = "citizen"
 
 
 # ---------------------------------------------------------------------------
@@ -181,3 +187,173 @@ class RAndRStatus(str, enum.Enum):
     PLAN_APPROVED = "plan_approved"
     RESETTLED = "resettled"
     MONITORING = "monitoring"
+
+
+# ---------------------------------------------------------------------------
+# Compensation (extended)
+# ---------------------------------------------------------------------------
+
+
+class CompensationStatusExtended(str, enum.Enum):
+    """Extended compensation status including verification step."""
+
+    PENDING = "pending"
+    UNDER_VERIFICATION = "under_verification"
+    PROCESSING = "processing"
+    DISBURSED = "disbursed"
+    FAILED = "failed"
+    DISPUTED = "disputed"
+
+
+# ---------------------------------------------------------------------------
+# Dispute
+# ---------------------------------------------------------------------------
+
+
+class DisputeStatus(str, enum.Enum):
+    """Status of a land acquisition dispute."""
+
+    OPEN = "open"
+    UNDER_REVIEW = "under_review"
+    HEARING_SCHEDULED = "hearing_scheduled"
+    RESOLVED = "resolved"
+    DISMISSED = "dismissed"
+    ESCALATED = "escalated"
+
+
+class DisputeType(str, enum.Enum):
+    """Type/category of a dispute."""
+
+    OWNERSHIP = "ownership"
+    VALUATION = "valuation"
+    BOUNDARY = "boundary"
+    COMPENSATION = "compensation"
+    RR = "rr"
+    PROCEDURAL = "procedural"
+    OTHER = "other"
+
+
+# ---------------------------------------------------------------------------
+# Document
+# ---------------------------------------------------------------------------
+
+
+class DocumentType(str, enum.Enum):
+    """Types of documents in the land acquisition workflow."""
+
+    PROPOSAL = "proposal"
+    PRELIMINARY_NOTIFICATION = "preliminary_notification"
+    SOCIAL_IMPACT_ASSESSMENT = "social_impact_assessment"
+    SURVEY_REPORT = "survey_report"
+    ENVIRONMENTAL_CLEARANCE = "environmental_clearance"
+    AWARD = "award"
+    COMPENSATION_ORDER = "compensation_order"
+    RR_PLAN = "rr_plan"
+    POSSESSION_CERTIFICATE = "possession_certificate"
+    OBJECTION = "objection"
+    COURT_ORDER = "court_order"
+    FIELD_REPORT = "field_report"
+    OTHER = "other"
+
+
+class DocumentStatus(str, enum.Enum):
+    """Verification/approval status of a document."""
+
+    UPLOADED = "uploaded"
+    UNDER_REVIEW = "under_review"
+    AI_ANALYZED = "ai_analyzed"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    REVISION_REQUIRED = "revision_required"
+
+
+# ---------------------------------------------------------------------------
+# Workflow Task
+# ---------------------------------------------------------------------------
+
+
+class WorkflowStage(str, enum.Enum):
+    """Stages in the land acquisition lifecycle workflow."""
+
+    PROPOSAL = "proposal"
+    LAND_IDENTIFICATION = "land_identification"
+    VERIFICATION = "verification"
+    NOTIFICATION = "notification"
+    SURVEY = "survey"
+    VALUATION = "valuation"
+    OBJECTION = "objection"
+    AWARD = "award"
+    COMPENSATION = "compensation"
+    RR = "rr"
+    POSSESSION = "possession"
+    CLOSURE = "closure"
+
+
+class TaskStatus(str, enum.Enum):
+    """Status of a workflow task."""
+
+    NOT_STARTED = "not_started"
+    IN_PROGRESS = "in_progress"
+    PENDING_REVIEW = "pending_review"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    BLOCKED = "blocked"
+    COMPLETED = "completed"
+    OVERDUE = "overdue"
+    ESCALATED = "escalated"
+
+
+class TaskPriority(str, enum.Enum):
+    """Priority level of a workflow task."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+# ---------------------------------------------------------------------------
+# Field Verification
+# ---------------------------------------------------------------------------
+
+
+class VerificationStatus(str, enum.Enum):
+    """Status of a field verification submission."""
+
+    SUBMITTED = "submitted"
+    PENDING_REVIEW = "pending_review"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    REVERIFICATION_REQUESTED = "reverification_requested"
+
+
+# ---------------------------------------------------------------------------
+# AI / Analytics
+# ---------------------------------------------------------------------------
+
+
+class RiskLevel(str, enum.Enum):
+    """Risk level classification for projects and parcels."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class AnomalySeverity(str, enum.Enum):
+    """Severity of a detected anomaly."""
+
+    INFO = "info"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class NotificationSeverity(str, enum.Enum):
+    """Severity level for system notifications."""
+
+    INFO = "info"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"

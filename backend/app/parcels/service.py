@@ -3,6 +3,7 @@ from typing import Any
 
 import shapely
 from fastapi import HTTPException
+# pyrefly: ignore [missing-import]
 from geoalchemy2.shape import to_shape
 from shapely.geometry import MultiPolygon, Polygon, shape
 from sqlalchemy import func, select
@@ -74,70 +75,77 @@ async def attach_geometry(
 
 async def get_project_parcels_geojson(
     session: AsyncSession, project_id: uuid.UUID
-) -> GeoJSONFeatureCollection:
-    """Return all geo-tagged parcels for a project as a FeatureCollection."""
+) -> dict:
+    """Return all geo-tagged parcels for a project as a FeatureCollection using ST_AsGeoJSON."""
+    import json
     stmt = (
-        select(LandParcel)
+        select(LandParcel, func.ST_AsGeoJSON(LandParcel.geometry).label("geojson_str"))
         .where(LandParcel.project_id == project_id)
         .where(LandParcel.geometry.is_not(None))
     )
     result = await session.execute(stmt)
-    parcels = result.scalars().all()
-
-    return _build_feature_collection(parcels)
+    rows = result.all()
+    
+    features = []
+    for parcel, geojson_str in rows:
+        features.append(
+            {
+                "type": "Feature",
+                "id": str(parcel.id),
+                "geometry": json.loads(geojson_str) if geojson_str else None,
+                "properties": {
+                    "id": str(parcel.id),
+                    "project_id": str(parcel.project_id),
+                    "survey_number": parcel.survey_number,
+                    "land_type": parcel.land_type.value,
+                    "area_hectares": float(parcel.area_hectares),
+                    "state": parcel.state,
+                    "district": parcel.district,
+                    "taluka": parcel.taluka,
+                    "village": parcel.village,
+                    "possession_status": parcel.possession_status.value,
+                },
+            }
+        )
+    return {"type": "FeatureCollection", "features": features}
 
 
 async def get_parcels_in_bbox(
     session: AsyncSession, min_lon: float, min_lat: float, max_lon: float, max_lat: float
-) -> GeoJSONFeatureCollection:
-    """Find parcels within a bounding box using PostGIS ST_MakeEnvelope."""
-    # ST_MakeEnvelope(xmin, ymin, xmax, ymax, srid)
+) -> dict:
+    """Find parcels within a bounding box using PostGIS ST_MakeEnvelope and ST_AsGeoJSON."""
+    import json
     bbox = func.ST_MakeEnvelope(min_lon, min_lat, max_lon, max_lat, 4326)
     
     stmt = (
-        select(LandParcel)
+        select(LandParcel, func.ST_AsGeoJSON(LandParcel.geometry).label("geojson_str"))
         .where(LandParcel.geometry.is_not(None))
-        # ST_Intersects checks if the geometries overlap/intersect
         .where(func.ST_Intersects(LandParcel.geometry, bbox))
     )
     
     result = await session.execute(stmt)
-    parcels = result.scalars().all()
+    rows = result.all()
 
-    return _build_feature_collection(parcels)
-
-
-def _build_feature_collection(parcels: list[LandParcel]) -> GeoJSONFeatureCollection:
-    """Helper to convert LandParcel objects to GeoJSON FeatureCollection."""
     features = []
-    for p in parcels:
-        if p.geometry is None:
-            continue
-            
-        # Convert WKB geometry from db to shapely geometry
-        shply_geom = to_shape(p.geometry)
-        
-        # Convert to python dict using shapely.geometry.mapping
-        geom_dict = shapely.geometry.mapping(shply_geom)
-        
-        properties = {
-            "id": str(p.id),
-            "project_id": str(p.project_id),
-            "survey_number": p.survey_number,
-            "land_type": p.land_type.value,
-            "area_hectares": float(p.area_hectares),
-            "state": p.state,
-            "district": p.district,
-            "taluka": p.taluka,
-            "village": p.village,
-            "possession_status": p.possession_status.value,
-        }
-        
+    for parcel, geojson_str in rows:
         features.append(
-            GeoJSONFeature(
-                geometry=geom_dict,
-                properties=properties
-            )
+            {
+                "type": "Feature",
+                "id": str(parcel.id),
+                "geometry": json.loads(geojson_str) if geojson_str else None,
+                "properties": {
+                    "id": str(parcel.id),
+                    "project_id": str(parcel.project_id),
+                    "survey_number": parcel.survey_number,
+                    "land_type": parcel.land_type.value,
+                    "area_hectares": float(parcel.area_hectares),
+                    "state": parcel.state,
+                    "district": parcel.district,
+                    "taluka": parcel.taluka,
+                    "village": parcel.village,
+                    "possession_status": parcel.possession_status.value,
+                },
+            }
         )
+    return {"type": "FeatureCollection", "features": features}
 
-    return GeoJSONFeatureCollection(features=features)

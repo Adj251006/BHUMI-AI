@@ -28,11 +28,15 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60   # 1 hour
     refresh_token_expire_days: int = 7      # 1 week
+    # LLM Settings
+    llm_provider: str = "gemini"
+    gemini_api_key: str = ""
 
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",
         "case_sensitive": False,
+        "extra": "ignore",
     }
 
 

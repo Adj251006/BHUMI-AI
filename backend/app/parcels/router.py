@@ -9,7 +9,64 @@ from app.models.user import User
 from app.parcels.schemas import GeoJSONFeatureCollection, ParcelGeometryUpdate
 from app.parcels.service import attach_geometry, get_parcels_in_bbox, get_project_parcels_geojson
 
+from typing import Optional
+from sqlalchemy import select
+from app.models.land_parcel import LandParcel
+
 router = APIRouter()
+
+
+@router.get("/")
+async def list_parcels(
+    project_id: Optional[uuid.UUID] = None,
+    session: AsyncSession = Depends(get_db),
+):
+    q = select(LandParcel).where(LandParcel.deleted_at.is_(None))
+    if project_id:
+        q = q.where(LandParcel.project_id == project_id)
+    result = await session.execute(q.limit(100))
+    parcels = result.scalars().all()
+    return [
+        {
+            "id": str(p.id),
+            "project_id": str(p.project_id),
+            "survey_number": p.survey_number,
+            "land_type": p.land_type.value,
+            "area_hectares": float(p.area_hectares),
+            "state": p.state,
+            "district": p.district,
+            "taluka": p.taluka,
+            "village": p.village,
+            "ownership_type": p.ownership_type.value,
+            "possession_status": p.possession_status.value,
+        }
+        for p in parcels
+    ]
+
+
+@router.get("/{parcel_id}")
+async def get_parcel(
+    parcel_id: uuid.UUID,
+    session: AsyncSession = Depends(get_db),
+):
+    result = await session.execute(select(LandParcel).where(LandParcel.id == parcel_id))
+    p = result.scalar_one_or_none()
+    if not p:
+        from fastapi import HTTPException
+        raise HTTPException(404, "Parcel not found")
+    return {
+        "id": str(p.id),
+        "project_id": str(p.project_id),
+        "survey_number": p.survey_number,
+        "land_type": p.land_type.value,
+        "area_hectares": float(p.area_hectares),
+        "state": p.state,
+        "district": p.district,
+        "taluka": p.taluka,
+        "village": p.village,
+        "ownership_type": p.ownership_type.value,
+        "possession_status": p.possession_status.value,
+    }
 
 
 @router.patch("/{parcel_id}/geometry")
