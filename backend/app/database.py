@@ -45,8 +45,8 @@ engine = create_async_engine(
     max_overflow=10,
     # Verify connections before checkout (handles Supabase idle disconnects).
     pool_pre_ping=True,
-    # Log SQL in development mode only.
-    echo=(settings.environment == "development"),
+    # Disable verbose SQL logging for clean terminal and performance
+    echo=False,
 )
 
 # ---------------------------------------------------------------------------

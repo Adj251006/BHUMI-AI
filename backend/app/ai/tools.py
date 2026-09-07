@@ -16,6 +16,7 @@ from app.models.enums import (
     CompensationStatus,
     DisputeStatus,
     PossessionStatus,
+    RAndRStatus,
     TaskStatus,
 )
 from app.models.family import Family
@@ -130,6 +131,8 @@ async def get_open_disputes(db: AsyncSession, project_id: Optional[uuid.UUID] = 
 async def get_compensation_backlog(db: AsyncSession, project_id: Optional[uuid.UUID] = None) -> Dict[str, Any]:
     """Retrieve compensation status metrics and pending records."""
     q = select(Compensation).where(Compensation.deleted_at.is_(None))
+    if project_id:
+        q = q.join(Award, Compensation.award_id == Award.id).join(LandParcel, Award.parcel_id == LandParcel.id).where(LandParcel.project_id == project_id)
     res = await db.execute(q)
     all_comp = res.scalars().all()
 
@@ -160,19 +163,21 @@ async def get_compensation_backlog(db: AsyncSession, project_id: Optional[uuid.U
 async def get_rr_summary(db: AsyncSession, project_id: Optional[uuid.UUID] = None) -> Dict[str, Any]:
     """Retrieve Rehabilitation & Resettlement statistics."""
     q = select(Family).where(Family.deleted_at.is_(None))
+    if project_id:
+        q = q.join(LandParcel, Family.parcel_id == LandParcel.id).where(LandParcel.project_id == project_id)
     res = await db.execute(q)
     families = res.scalars().all()
 
     total = len(families)
-    eligible = sum(1 for f in families if f.is_eligible_for_resettlement)
-    allotted = sum(1 for f in families if f.resettlement_status == "allotted")
-    pending = eligible - allotted
+    eligible = sum(1 for f in families if f.r_and_r_status in (RAndRStatus.PLAN_APPROVED, RAndRStatus.RESETTLED, RAndRStatus.MONITORING, RAndRStatus.SURVEY_COMPLETED))
+    allotted = sum(1 for f in families if f.r_and_r_status in (RAndRStatus.RESETTLED, RAndRStatus.MONITORING))
+    pending = max(0, total - allotted)
 
     return {
         "total_displaced_families": total,
         "eligible_for_resettlement": eligible,
         "resettlement_allotted": allotted,
-        "resettlement_pending": max(0, pending),
+        "resettlement_pending": pending,
     }
 
 

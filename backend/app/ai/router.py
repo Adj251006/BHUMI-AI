@@ -256,7 +256,7 @@ async def run_simulation(
     projected_delay = max(0, current_delay - delay_reduction)
 
     def _level(p: float) -> str:
-        return "low" if p < 0.3 else "medium" if p < 0.6 else "high"
+        return "low" if p < 0.20 else "medium" if p < 0.45 else "high" if p < 0.70 else "critical"
 
     return {
         "disclaimer": "AI-generated scenario estimate. Not a guaranteed outcome.",
@@ -278,42 +278,38 @@ async def run_simulation(
 
 @router.post("/document/analyze")
 async def analyze_document(
+    doc_id: Optional[uuid.UUID] = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Mock AI document intelligence — OCR + extraction + validation."""
-    return {
-        "extracted_fields": {
-            "project_id": {"value": "RJ-HWY-024", "confidence": 0.97, "status": "matched"},
-            "survey_number": {"value": "124/2", "confidence": 0.94, "status": "matched"},
-            "village": {"value": "Chomu", "confidence": 0.91, "status": "matched"},
-            "land_area_hectares": {"value": "2.4", "confidence": 0.89, "status": "matched"},
-            "authority": {"value": "District Collector, Jaipur", "confidence": 0.95, "status": "matched"},
-            "date": {"value": "2026-08-28", "confidence": 0.98, "status": "matched"},
-            "award_amount_inr": {
-                "value": "18400000",
-                "confidence": 0.72,
-                "status": "mismatch",
-                "system_value": "18500000",
-                "note": "Amount differs by Rs 1,00,000 from system records",
-            },
-            "authorized_signature": {
-                "value": None,
-                "confidence": 0.0,
-                "status": "missing",
-                "note": "Authorized signature not detected in document",
-            },
-        },
-        "document_classification": "award",
-        "overall_confidence": 0.88,
-        "validation_result": {
-            "status": "requires_review",
-            "issues": ["Award amount mismatch", "Missing authorized signature"],
-            "matched_fields": 6,
-            "total_fields": 8,
-        },
-        "disclaimer": "AI-extracted fields — please verify before approving.",
-    }
+    """AI statutory document intelligence — OCR + RFCTLARR Act (2013) compliance checks."""
+    from app.ai.documents import analyze_statutory_document
+    from app.models.document import Document
+
+    filename = "Gazette_Notification_Sec11.pdf"
+    doc_type = "section_11_notice"
+    if doc_id:
+        res = await db.execute(select(Document).where(Document.id == doc_id))
+        d = res.scalar_one_or_none()
+        if d:
+            filename = d.file_name or d.title
+            doc_type = d.document_type.value
+
+    return analyze_statutory_document(
+        filename=filename,
+        document_type=doc_type,
+    )
+
+
+@router.get("/corridors/{project_id}")
+async def get_corridor_comparison(
+    project_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Evaluates multi-criteria route corridor alignment options using PostGIS spatial analytics."""
+    from app.ai.corridor import compare_route_corridors
+    return await compare_route_corridors(project_id, db)
 
 
 @router.get("/recommendations/{project_id}")
@@ -470,16 +466,52 @@ async def recalculate_project_risk(project_id: uuid.UUID, db: AsyncSession) -> A
         .where(WorkflowTask.project_id == project_id, WorkflowTask.status == TaskStatus.OVERDUE)
     )).scalar_one()
 
-    score = min(1.0, (dispute_count * 0.04) + (comp_pending * 0.01) + (tasks_overdue * 0.05))
-    delay_prob = min(0.99, max(0.05, score * 0.95))
-    delay_days = int(score * 50)
+    total_parcels = max(1, (await db.execute(
+        select(func.count(LandParcel.id)).where(LandParcel.project_id == project_id)
+    )).scalar_one() or 1)
+
+    # Multi-factor normalized risk calculation (avoids 1.0 saturation)
+    dispute_ratio = min(1.0, dispute_count / max(5, total_parcels * 0.25))
+    comp_ratio = min(1.0, comp_pending / max(10, total_parcels * 0.50))
+    tasks_ratio = min(1.0, tasks_overdue / 4.0)
+
+    raw_score = (0.40 * dispute_ratio) + (0.35 * comp_ratio) + (0.25 * tasks_ratio)
+    score = round(min(0.92, max(0.08, raw_score)), 3)
+    delay_prob = score
+    delay_days = int(score * 45)
     level = RiskLevel.CRITICAL if score > 0.70 else RiskLevel.HIGH if score > 0.45 else RiskLevel.MEDIUM if score > 0.20 else RiskLevel.LOW
 
     factors = [
-        {"factor": "Open Disputes", "contribution_pct": round(min(50, dispute_count * 4)), "description": f"{dispute_count} open court/land dispute cases in project"},
-        {"factor": "Compensation Pending", "contribution_pct": round(min(40, comp_pending * 0.8)), "description": f"{comp_pending} project cases under verification"},
-        {"factor": "SLA Approvals", "contribution_pct": round(min(30, tasks_overdue * 10)), "description": f"{tasks_overdue} project tasks past deadline"},
+        {
+            "factor": "Statutory Litigation & Objections",
+            "contribution_pct": round(dispute_ratio * 40),
+            "description": f"{dispute_count} active Section 15/64 disputes",
+        },
+        {
+            "factor": "DBT Compensation Backlog",
+            "contribution_pct": round(comp_ratio * 35),
+            "description": f"{comp_pending} award disbursements pending",
+        },
+        {
+            "factor": "Statutory SLA Compliance",
+            "contribution_pct": round(tasks_ratio * 25),
+            "description": f"{tasks_overdue} workflow milestones overdue",
+        },
     ]
+
+    proj_name = (await db.execute(select(Project.name).where(Project.id == project_id))).scalar() or "Project"
+    slip_months = max(1, int(round(delay_days / 15)))
+
+    if dispute_count > 0 and (dispute_ratio >= comp_ratio and dispute_ratio >= tasks_ratio):
+        primary_driver = f"{dispute_count} parcels stuck in Section 15 objections & litigation"
+    elif comp_pending > 0 and comp_ratio >= tasks_ratio:
+        primary_driver = f"{comp_pending} beneficiaries awaiting statutory DBT escrow release"
+    elif tasks_overdue > 0:
+        primary_driver = f"{tasks_overdue} statutory SLA milestones overdue"
+    else:
+        primary_driver = "normal statutory progression"
+
+    explanation_text = f"{proj_name}: {round(score * 100)}% risk of {slip_months}-month slip — Primary driver: {primary_driver}."
 
     risk_r = await db.execute(
         select(AIRiskPrediction).where(AIRiskPrediction.project_id == project_id)
@@ -490,8 +522,8 @@ async def recalculate_project_risk(project_id: uuid.UUID, db: AsyncSession) -> A
         risk = AIRiskPrediction(
             id=uuid.uuid4(), project_id=project_id, risk_level=level,
             risk_score=score, delay_probability=delay_prob, expected_delay_days=delay_days,
-            contributing_factors=factors, explanation=f"Dynamic AI recalculation: {level.value.upper()} ({delay_prob:.0%} delay probability)",
-            model_version="dynamic-v1.0"
+            contributing_factors=factors, explanation=explanation_text,
+            model_version="normalized-v2.0"
         )
         db.add(risk)
     else:
@@ -500,7 +532,7 @@ async def recalculate_project_risk(project_id: uuid.UUID, db: AsyncSession) -> A
         risk.delay_probability = delay_prob
         risk.expected_delay_days = delay_days
         risk.contributing_factors = factors
-        risk.explanation = f"Dynamic AI recalculation: {level.value.upper()} ({delay_prob:.0%} delay probability)"
+        risk.explanation = explanation_text
 
     await db.flush()
     return risk

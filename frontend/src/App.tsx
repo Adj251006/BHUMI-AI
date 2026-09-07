@@ -16,6 +16,7 @@ import FieldDashboard from './pages/FieldDashboard';
 import CitizenPortal from './pages/CitizenPortal';
 import AuditLog from './pages/AuditLog';
 import RRManagement from './pages/RRManagement';
+import LandBank from './pages/LandBank';
 import MapView from './components/Map';
 
 function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) {
@@ -43,6 +44,7 @@ function AppRoutes() {
       <Route path="/compensation" element={<ProtectedRoute><Compensation /></ProtectedRoute>} />
       <Route path="/disputes" element={<ProtectedRoute><Disputes /></ProtectedRoute>} />
       <Route path="/rr" element={<ProtectedRoute><RRManagement /></ProtectedRoute>} />
+      <Route path="/land-bank" element={<ProtectedRoute><LandBank /></ProtectedRoute>} />
       <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
       <Route path="/workflow" element={<ProtectedRoute><Workflow /></ProtectedRoute>} />
       <Route path="/simulator" element={<ProtectedRoute><Simulator /></ProtectedRoute>} />

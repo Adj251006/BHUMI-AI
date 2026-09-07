@@ -164,6 +164,7 @@ class CompensationStatus(str, enum.Enum):
     """Disbursement status of compensation to land owners/beneficiaries."""
 
     PENDING = "pending"
+    UNDER_VERIFICATION = "under_verification"
     PROCESSING = "processing"
     DISBURSED = "disbursed"
     FAILED = "failed"

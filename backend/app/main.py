@@ -4,10 +4,12 @@ BHUMI-AI: Intelligent National Land Acquisition & Management Platform
 SIH26016 — Ministry of Rural Development
 """
 
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
 from app.auth.router import router as auth_router
@@ -58,13 +60,24 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
+os.makedirs(uploads_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 # Auth
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
@@ -88,6 +101,12 @@ app.include_router(field_router, prefix="/api/field", tags=["Field Verification"
 app.include_router(rr_router, prefix="/api/rr", tags=["R&R Management"])
 app.include_router(notif_router, prefix="/api/notifications", tags=["Notifications"])
 app.include_router(audit_router, prefix="/api/audit", tags=["Audit"])
+from app.land_bank.router import router as land_bank_router
+app.include_router(land_bank_router, prefix="/api/land-bank", tags=["Land Bank & Asset Management"])
+from app.integrations.router import router as integrations_router
+app.include_router(integrations_router, prefix="/api/integrations", tags=["National Integrations"])
+from app.citizen.router import router as citizen_router
+app.include_router(citizen_router, prefix="/api/citizen", tags=["Citizen Portal"])
 
 
 @app.get("/health", tags=["System"])

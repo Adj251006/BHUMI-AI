@@ -26,5 +26,11 @@ python-dotenv>=1.0.0
 
 # Authentication (Module 2)
 passlib[bcrypt]>=1.7.4          # Password hashing with bcrypt backend
+bcrypt>=4.0.0
 python-jose[cryptography]>=3.3.0  # JWT encoding/decoding (HMAC-SHA256)
 email-validator>=2.0.0          # Pydantic EmailStr validation
+
+# Networking and Geospatial utilities
+httpx>=0.25.0
+shapely>=2.0.0
+python-multipart>=0.0.9

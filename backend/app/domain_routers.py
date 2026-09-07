@@ -2,7 +2,7 @@
 import uuid
 from typing import Optional
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
@@ -60,6 +60,36 @@ async def list_compensation(
     ]
 
 
+class AwardCalculationRequest(BaseModel):
+    base_market_value_per_hectare: float = 2500000.0
+    area_hectares: float = 1.5
+    is_rural: bool = True
+    distance_from_urban_boundary_km: float = 15.0
+    structure_valuation: float = 350000.0
+    trees_and_crops_valuation: float = 120000.0
+    notification_date_iso: Optional[str] = None
+    award_date_iso: Optional[str] = None
+
+
+@comp_router.post("/calculate-award")
+async def calculate_award_endpoint(
+    body: AwardCalculationRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """Calculate statutory compensation award per Sections 26 to 30 of RFCTLARR Act 2013."""
+    from app.compensation.calculator import calculate_statutory_award
+    return calculate_statutory_award(
+        base_market_value_per_hectare=body.base_market_value_per_hectare,
+        area_hectares=body.area_hectares,
+        is_rural=body.is_rural,
+        distance_from_urban_boundary_km=body.distance_from_urban_boundary_km,
+        structure_valuation=body.structure_valuation,
+        trees_and_crops_valuation=body.trees_and_crops_valuation,
+        notification_date_iso=body.notification_date_iso,
+        award_date_iso=body.award_date_iso,
+    )
+
+
 @comp_router.put("/{comp_id}/status")
 async def update_compensation_status(
     comp_id: uuid.UUID,
@@ -106,14 +136,21 @@ async def assign_field_verification(
 ):
     if current_user.role not in (UserRole.DISTRICT_AUTHORITY, UserRole.CENTRAL_MINISTRY):
         raise HTTPException(403, "Only district authority can assign verification")
-    result = await db.execute(select(Compensation).where(Compensation.id == comp_id))
-    comp = result.scalar_one_or_none()
-    if not comp:
+    from app.models.award import Award
+    result = await db.execute(
+        select(Compensation, LandParcel.project_id)
+        .join(Award, Compensation.award_id == Award.id)
+        .join(LandParcel, Award.parcel_id == LandParcel.id)
+        .where(Compensation.id == comp_id)
+    )
+    row = result.first()
+    if not row:
         raise HTTPException(404, "Compensation record not found")
+    comp, real_project_id = row
     # Create workflow task for field officer
     task = WorkflowTask(
         id=uuid.uuid4(),
-        project_id=comp.award_id,  # Using award_id as project ref
+        project_id=real_project_id,
         stage=WorkflowStage.COMPENSATION,
         title=f"Verify compensation documents for beneficiary: {comp.beneficiary_name}",
         assigned_to=officer_id,
@@ -180,6 +217,90 @@ async def list_disputes(
         }
         for d in items
     ]
+
+
+class DisputeCreate(BaseModel):
+    parcel_id: uuid.UUID
+    dispute_type: str = "measurement_dispute"
+    title: str
+    description: str
+    court_case_number: Optional[str] = None
+    hearing_date_iso: Optional[str] = None
+
+
+@dispute_router.post("/")
+async def file_dispute(
+    body: DisputeCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """File a statutory objection or dispute under Section 15 or Section 64 of RFCTLARR Act 2013."""
+    from app.models.land_parcel import LandParcel
+    from app.models.enums import DisputeType
+    from app.audit.service import record_audit_event
+    from app.models.ai_risk import SystemNotification
+
+    p_res = await db.execute(select(LandParcel).where(LandParcel.id == body.parcel_id))
+    parcel = p_res.scalar_one_or_none()
+    if not parcel:
+        raise HTTPException(404, "Parcel not found")
+
+    dispute_type_enum = DisputeType.MEASUREMENT_DISPUTE
+    try:
+        dispute_type_enum = DisputeType(body.dispute_type)
+    except Exception:
+        pass
+
+    hearing_dt = None
+    if body.hearing_date_iso:
+        try:
+            hearing_dt = datetime.fromisoformat(body.hearing_date_iso).replace(tzinfo=timezone.utc)
+        except Exception:
+            pass
+
+    dispute = Dispute(
+        id=uuid.uuid4(),
+        parcel_id=body.parcel_id,
+        dispute_type=dispute_type_enum,
+        status=DisputeStatus.OPEN,
+        title=body.title,
+        description=body.description,
+        court_case_number=body.court_case_number,
+        hearing_date=hearing_dt,
+        created_by=current_user.id,
+        updated_by=current_user.id,
+    )
+    db.add(dispute)
+
+    notif = SystemNotification(
+        id=uuid.uuid4(),
+        title="Statutory Objection / Dispute Filed",
+        message=f"New Section 15/64 objection filed for Survey {parcel.survey_number}: '{body.title}' by {current_user.email}.",
+        severity="high",
+        entity_type="Dispute",
+        entity_id=dispute.id,
+        is_read=False,
+    )
+    db.add(notif)
+
+    await record_audit_event(
+        db=db,
+        action="FILE_STATUTORY_DISPUTE",
+        entity_type="Dispute",
+        entity_id=str(dispute.id),
+        current_user=current_user,
+        new_value={"parcel_id": str(parcel.id), "survey_number": parcel.survey_number, "type": dispute.dispute_type.value},
+        description=f"Statutory objection filed for parcel {parcel.survey_number} under RFCTLARR Act 2013.",
+    )
+    await db.flush()
+
+    return {
+        "status": "success",
+        "id": str(dispute.id),
+        "dispute_type": dispute.dispute_type.value,
+        "title": dispute.title,
+        "message": "Statutory objection registered successfully. Assigned to Competent Authority for hearing.",
+    }
 
 
 @dispute_router.put("/{dispute_id}/resolve")
@@ -267,6 +388,87 @@ async def list_documents(
     ]
 
 
+@doc_router.post("/upload")
+async def upload_document(
+    file: UploadFile = File(...),
+    project_id: uuid.UUID = Form(...),
+    document_type: str = Form("section_11_notice"),
+    title: Optional[str] = Form(None),
+    parcel_id: Optional[uuid.UUID] = Form(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Upload a real statutory document, save to disk, and trigger AI compliance validation."""
+    import os
+    from app.models.enums import DocumentType
+    from app.ai.documents import analyze_statutory_document
+    from app.audit.service import record_audit_event
+
+    content = await file.read()
+    filename = file.filename or f"doc_{uuid.uuid4().hex[:8]}.pdf"
+    file_id = uuid.uuid4()
+    saved_filename = f"{file_id}_{filename}"
+    upload_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads")
+    os.makedirs(upload_dir, exist_ok=True)
+    file_path = os.path.join(upload_dir, saved_filename)
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    # Perform AI Statutory Compliance Check
+    ai_result = analyze_statutory_document(
+        filename=filename,
+        document_type=document_type,
+        file_bytes=content,
+    )
+
+    doc_type_enum = DocumentType.SECTION_11_NOTICE
+    try:
+        doc_type_enum = DocumentType(document_type)
+    except Exception:
+        pass
+
+    doc = Document(
+        id=file_id,
+        project_id=project_id,
+        parcel_id=parcel_id,
+        document_type=doc_type_enum,
+        title=title or filename,
+        file_url=f"/uploads/{saved_filename}",
+        file_name=filename,
+        file_size_bytes=len(content),
+        mime_type=file.content_type or "application/pdf",
+        status=DocumentStatus.UNDER_REVIEW,
+        extracted_fields=ai_result.get("extracted_fields"),
+        validation_result=ai_result.get("validation_checklist"),
+        ai_confidence_score=ai_result.get("confidence_score"),
+        review_notes=ai_result.get("compliance_summary"),
+        created_by=current_user.id,
+        updated_by=current_user.id,
+    )
+    db.add(doc)
+    await record_audit_event(
+        db=db,
+        action="UPLOAD_STATUTORY_DOCUMENT",
+        entity_type="Document",
+        entity_id=str(doc.id),
+        current_user=current_user,
+        new_value={"filename": filename, "type": document_type, "size_bytes": len(content)},
+        description=f"Uploaded {document_type} '{filename}' with AI confidence {ai_result.get('confidence_score')}.",
+    )
+    await db.flush()
+    return {
+        "id": str(doc.id),
+        "title": doc.title,
+        "document_type": doc.document_type.value,
+        "status": doc.status.value,
+        "file_url": doc.file_url,
+        "ai_confidence_score": doc.ai_confidence_score,
+        "extracted_fields": doc.extracted_fields,
+        "validation_checklist": doc.validation_result,
+        "review_notes": doc.review_notes,
+    }
+
+
 @doc_router.put("/{doc_id}/status")
 async def update_document_status(
     doc_id: uuid.UUID,
@@ -275,6 +477,13 @@ async def update_document_status(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if current_user.role not in (
+        UserRole.DISTRICT_AUTHORITY,
+        UserRole.STATE_GOVT,
+        UserRole.CENTRAL_MINISTRY,
+        UserRole.PROJECT_AGENCY,
+    ):
+        raise HTTPException(403, "Insufficient permissions to update document verification status")
     result = await db.execute(select(Document).where(Document.id == doc_id))
     doc = result.scalar_one_or_none()
     if not doc:
@@ -290,6 +499,87 @@ async def update_document_status(
 # WORKFLOW ROUTER
 # ============================================================
 workflow_router = APIRouter()
+
+
+class StageTransitionRequest(BaseModel):
+    project_id: uuid.UUID
+    target_stage: str
+    notes: Optional[str] = None
+
+
+@workflow_router.get("/rules")
+async def get_workflow_rules(
+    current_user: User = Depends(get_current_user),
+):
+    """Retrieve RFCTLARR 2013 statutory workflow stage progression rules and SLAs."""
+    from app.workflow.engine import STATUTORY_WORKFLOW_RULES
+    return {k: v.__dict__ for k, v in STATUTORY_WORKFLOW_RULES.items()}
+
+
+@workflow_router.post("/transition")
+async def transition_project_stage(
+    body: StageTransitionRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Transition a project to a new statutory stage with full RFCTLARR Act (2013) compliance enforcement."""
+    from app.models.project import Project
+    from app.workflow.engine import validate_stage_transition, STATUTORY_WORKFLOW_RULES
+    from app.audit.service import record_audit_event
+
+    result = await db.execute(select(Project).where(Project.id == body.project_id))
+    project = result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(404, "Project not found")
+
+    old_stage = project.current_stage.value
+    is_valid, error_msg = validate_stage_transition(
+        current_stage=old_stage,
+        target_stage=body.target_stage,
+        user_role=current_user.role.value,
+    )
+    if not is_valid:
+        raise HTTPException(400, detail=error_msg)
+
+    project.current_stage = WorkflowStage(body.target_stage)
+    
+    await record_audit_event(
+        db=db,
+        action="STATUTORY_STAGE_TRANSITION",
+        entity_type="Project",
+        entity_id=str(project.id),
+        current_user=current_user,
+        old_value={"stage": old_stage},
+        new_value={"stage": body.target_stage, "notes": body.notes},
+        description=f"Project transitioned from {old_stage} to {body.target_stage} under RFCTLARR Act 2013.",
+    )
+
+    target_rule = STATUTORY_WORKFLOW_RULES.get(body.target_stage)
+    if target_rule and target_rule.statutory_time_limit_days:
+        from datetime import timedelta
+        due = datetime.now(timezone.utc) + timedelta(days=target_rule.statutory_time_limit_days)
+        new_task = WorkflowTask(
+            id=uuid.uuid4(),
+            project_id=project.id,
+            stage=WorkflowStage(body.target_stage),
+            title=f"Statutory Milestone: {target_rule.name}",
+            description=f"Statutory compliance under {target_rule.section_ref}. SLA limit: {target_rule.statutory_time_limit_days} days.",
+            status=TaskStatus.PENDING,
+            priority=TaskPriority.HIGH,
+            due_date=due,
+            created_by=current_user.id,
+            updated_by=current_user.id,
+        )
+        db.add(new_task)
+
+    await db.flush()
+    return {
+        "status": "success",
+        "project_id": str(project.id),
+        "previous_stage": old_stage,
+        "current_stage": project.current_stage.value,
+        "message": f"Successfully transitioned to {target_rule.name if target_rule else body.target_stage}",
+    }
 
 
 @workflow_router.get("/tasks")
@@ -344,6 +634,11 @@ async def update_task_status(
     task = result.scalar_one_or_none()
     if not task:
         raise HTTPException(404, "Task not found")
+    if (
+        task.assigned_to != current_user.id
+        and current_user.role not in (UserRole.DISTRICT_AUTHORITY, UserRole.STATE_GOVT, UserRole.CENTRAL_MINISTRY)
+    ):
+        raise HTTPException(403, "Not authorized to update this task")
     old_status = task.status.value
     task.status = TaskStatus(new_status)
     if new_status == "completed":
@@ -393,15 +688,28 @@ async def submit_verification(
     if current_user.role not in (UserRole.FIELD_OFFICER, UserRole.DISTRICT_AUTHORITY, UserRole.CENTRAL_MINISTRY):
         raise HTTPException(403, "Only field officers can submit verifications")
 
-    # AI GPS consistency check
+    # AI GPS consistency check using spherical Haversine formula
     gps_mismatch = False
     gps_distance = None
-    if (body.gps_latitude and body.registered_latitude):
+    if (
+        body.gps_latitude is not None
+        and body.registered_latitude is not None
+        and body.gps_longitude is not None
+        and body.registered_longitude is not None
+    ):
         import math
-        dlat = body.gps_latitude - body.registered_latitude
-        dlon = (body.gps_longitude or 0) - (body.registered_longitude or 0)
-        gps_distance = math.sqrt(dlat**2 + dlon**2) * 111000  # approx meters
-        gps_mismatch = gps_distance > 100  # >100m mismatch flagged
+        R = 6371000.0  # Earth radius in meters
+        phi1 = math.radians(body.registered_latitude)
+        phi2 = math.radians(body.gps_latitude)
+        delta_phi = math.radians(body.gps_latitude - body.registered_latitude)
+        delta_lambda = math.radians(body.gps_longitude - body.registered_longitude)
+        a = (
+            math.sin(delta_phi / 2.0) ** 2
+            + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2.0) ** 2
+        )
+        c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
+        gps_distance = round(R * c, 2)
+        gps_mismatch = gps_distance > 100.0  # >100m mismatch flagged
 
     v = FieldVerification(
         id=uuid.uuid4(),
@@ -524,6 +832,15 @@ async def list_notifications(
     ]
 
 
+@notif_router.get("/outbox")
+async def list_outbox_notifications(
+    current_user: User = Depends(get_current_user),
+):
+    """Returns the external SMS and Email communication dispatch outbox."""
+    from app.notifications.gateway import NOTIFICATION_OUTBOX
+    return NOTIFICATION_OUTBOX
+
+
 @notif_router.put("/read-all")
 async def mark_all_read(
     db: AsyncSession = Depends(get_db),
@@ -554,6 +871,8 @@ async def mark_read(
     n = result.scalar_one_or_none()
     if not n:
         raise HTTPException(404, "Notification not found")
+    if n.recipient_id is not None and n.recipient_id != current_user.id and current_user.role != UserRole.CENTRAL_MINISTRY:
+        raise HTTPException(403, "Not authorized to modify this notification")
     n.is_read = True
     await db.flush()
     return {"id": str(notif_id), "is_read": True}
@@ -600,6 +919,22 @@ async def list_audit_logs(
             "old_value": l.old_value,
             "new_value": l.new_value,
             "description": l.description,
+            "prev_hash": l.prev_hash,
+            "entry_hash": l.entry_hash,
         }
         for l in logs
     ]
+
+
+@audit_router.get("/verify")
+async def verify_audit_trail(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Verify cryptographic hash-chain integrity across all audit records."""
+    if current_user.role not in (
+        UserRole.CENTRAL_MINISTRY, UserRole.STATE_GOVT, UserRole.DISTRICT_AUTHORITY, UserRole.AUDITOR
+    ):
+        raise HTTPException(403, "Insufficient permissions to perform audit cryptographic verification")
+    from app.audit.service import verify_chain_integrity
+    return await verify_chain_integrity(db)

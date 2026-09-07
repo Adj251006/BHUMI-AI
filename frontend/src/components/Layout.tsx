@@ -69,6 +69,7 @@ const NAV_ITEMS: NavItem[] = [
   { path: '/compensation', label: 'Compensation', icon: '💰', badge: 52, badgeType: 'error' },
   { path: '/disputes', label: 'Disputes', icon: '⚖️', badge: 18, badgeType: 'warning' },
   { path: '/rr', label: 'R&R Management', icon: '🏡' },
+  { path: '/land-bank', label: 'Land Bank', icon: '🏞️' },
   { path: '/documents', label: 'Documents', icon: '📄' },
   { path: '/workflow', label: 'Workflow', icon: '🔄' },
   { path: '/field', label: 'Field Ops', icon: '📍', roles: ['field_officer', 'district_authority'] },
@@ -82,6 +83,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const [showNotif, setShowNotif] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [showIntegrations, setShowIntegrations] = useState(false);
+  const [syncingSystem, setSyncingSystem] = useState<string | null>(null);
 
   useEffect(() => {
     api.getNotifications()
@@ -230,12 +233,120 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 onMarkAllRead={handleMarkAllRead}
               />
             </div>
+            
+            {/* National Integrations Gateway Indicator */}
+            <button
+              className="btn btn-sm"
+              id="integrations-gateway-btn"
+              onClick={() => setShowIntegrations(true)}
+              title="National Integration Adapters"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                background: '#F0FDF4',
+                border: '1px solid #86EFAC',
+                color: '#166534',
+                fontSize: 12,
+                fontWeight: 700,
+                borderRadius: 8,
+                padding: '6px 12px',
+              }}
+            >
+              <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#22C55E' }} />
+              <span>National Gateway</span>
+            </button>
+
             <button className="btn-icon" onClick={() => navigate('/citizen')} title="Citizen Portal">🌐</button>
             <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, var(--teal), var(--teal-dark))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
               {initials}
             </div>
           </div>
         </header>
+
+        {/* NATIONAL INTEGRATION MODAL */}
+        {showIntegrations && (
+          <div
+            style={{
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1100,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
+            }}
+          >
+            <div className="card" style={{ maxWidth: 640, width: '100%', padding: 28, borderRadius: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                <div>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#166534', textTransform: 'uppercase', letterSpacing: 1 }}>
+                    MINISTRY OF RURAL DEVELOPMENT · NATIONAL ADAPTERS
+                  </span>
+                  <h3 style={{ fontSize: 18, fontWeight: 800, margin: '2px 0 0' }}>
+                    🌐 National Land Records & Financial Integrations
+                  </h3>
+                </div>
+                <button type="button" onClick={() => setShowIntegrations(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer' }}>
+                  ✕
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {[
+                  { key: 'dilrmp', name: 'DILRMP (Digital India Land Records)', desc: 'Direct RoR (Record of Rights) synchronization & survey map feeds', count: '12,400 Records', active: true },
+                  { key: 'ecourts', name: 'e-Courts National Case Grid', desc: 'Real-time Section 15/64 litigation tracking across High Courts & District Courts', count: '18 Active Cases', active: true },
+                  { key: 'pfms', name: 'PFMS (Public Financial Management System)', desc: 'Direct Benefit Transfer (DBT) escrow validation for Section 26-30 awards', count: 'Live API Gateway', active: true },
+                  { key: 'bhunaksha', name: 'NIC Bhu-Naksha Cadastral Engine', desc: 'Spatial vector GeoJSON cadastral boundaries & GIS overlay', count: 'WMS Server Online', active: true },
+                ].map(sys => (
+                  <div
+                    key={sys.key}
+                    style={{
+                      border: '1px solid #E2E8F0',
+                      borderRadius: 12,
+                      padding: '14px 18px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      background: '#F8FAFC',
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#16A34A' }} />
+                        <strong style={{ fontSize: 14, color: 'var(--text-primary)' }}>{sys.name}</strong>
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{sys.desc}</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <span className="badge badge-success" style={{ fontSize: 11 }}>{sys.count}</span>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        disabled={syncingSystem === sys.key}
+                        onClick={async () => {
+                          setSyncingSystem(sys.key);
+                          try {
+                            await api.triggerIntegrationSync(sys.key);
+                            alert(`Successfully synchronized with ${sys.name}!`);
+                          } catch (err: any) {
+                            alert(err.message || 'Sync failed');
+                          } finally {
+                            setSyncingSystem(null);
+                          }
+                        }}
+                        style={{ display: 'block', marginTop: 6, fontSize: 11, padding: '3px 8px' }}
+                      >
+                        {syncingSystem === sys.key ? 'Syncing...' : 'Sync Now ↻'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowIntegrations(false)}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* PAGE */}
         <main className="page-content fade-in">

@@ -26,13 +26,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const handleUnauthorized = () => {
+      logout();
+    };
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+
     const t = localStorage.getItem('bhumi_token');
     if (t) {
       setToken(t);
-      api.me().then(setUser).catch(() => { localStorage.removeItem('bhumi_token'); }).finally(() => setIsLoading(false));
+      api.me()
+        .then(setUser)
+        .catch(() => {
+          logout();
+        })
+        .finally(() => setIsLoading(false));
     } else {
       setIsLoading(false);
     }
+
+    return () => {
+      window.removeEventListener('auth:unauthorized', handleUnauthorized);
+    };
   }, []);
 
   const login = async (email: string, password: string) => {

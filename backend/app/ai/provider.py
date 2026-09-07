@@ -5,12 +5,15 @@ Supports:
 - LocalFallbackProvider (Database-grounded deterministic reasoning engine)
 """
 
+import logging
 import os
 import re
 import json
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 import httpx
+
+logger = logging.getLogger(__name__)
 
 
 class AIProvider(ABC):
@@ -90,10 +93,11 @@ class GeminiProvider(AIProvider):
         models_to_try = [self.model, "gemini-flash-lite-latest"] if self.model != "gemini-flash-lite-latest" else [self.model]
 
         async with httpx.AsyncClient(timeout=25.0) as client:
+            headers = {"x-goog-api-key": self.api_key}
             for model_name in models_to_try:
                 try:
-                    target_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.api_key}"
-                    resp = await client.post(target_url, json=payload)
+                    target_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+                    resp = await client.post(target_url, json=payload, headers=headers)
                     if resp.status_code == 200:
                         data = resp.json()
                         candidates = data.get("candidates", [])
@@ -112,9 +116,9 @@ class GeminiProvider(AIProvider):
                                     "suggested_action": suggested_action,
                                 }
                     else:
-                        print(f"Gemini model {model_name} returned status {resp.status_code}: {resp.text[:120]}")
+                        logger.warning(f"Gemini model {model_name} returned status {resp.status_code}: {resp.text[:120]}")
                 except Exception as e:
-                    print(f"Gemini model {model_name} request failed: {e}")
+                    logger.warning(f"Gemini model {model_name} request failed: {e}")
 
         # Fallback to local intelligence
         fb_res = await self.fallback.generate_response(user_message, history, context_data, language, role)

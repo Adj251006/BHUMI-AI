@@ -39,6 +39,8 @@ class AuditLog(Base):
     new_value: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     ip_address: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    prev_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, comment="SHA-256 hash of previous audit record")
+    entry_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, comment="SHA-256 hash of current audit record")
 
     def __repr__(self) -> str:
         return f"<AuditLog {self.action} on {self.entity_type}/{self.entity_id}>"
