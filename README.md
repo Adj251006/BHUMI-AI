@@ -296,6 +296,12 @@ start.bat
 docker compose up
 ```
 
+#### ▲ Deploy Live to Vercel (Public URL in 60s):
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FAdj251006%2FBHUMI-AI)
+- Click the button above or import the repository at [vercel.com/new](https://vercel.com/new).
+- The repository is pre-configured with `vercel.json` for instant Vite production builds and React Router SPA fallback routing.
+- See the full [Deployment Guide (docs/DEPLOYMENT_GUIDE.md)](docs/DEPLOYMENT_GUIDE.md) for backend hosting on Render / Railway.
+
 ---
 
 ### 🛠️ Manual Step-by-Step Setup (Alternative)

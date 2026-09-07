@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: bhumi-ai-backend
+    env: python
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://postgres.ffxsuugwobmwjbguglqi:Aaryan%40251006@15.165.245.138:5432/postgres?sslmode=require
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ENVIRONMENT
+        value: production

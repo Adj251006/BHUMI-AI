@@ -38,7 +38,7 @@ const COLORS = ['#1B6CA8', '#27AE60', '#E67E22', '#E74C3C', '#8E44AD', '#16A085'
 export default function Dashboard() {
   const navigate = useNavigate();
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
-  const [criticalRisk, setCriticalRisk] = useState<any>(null);
+  const [criticalRisk] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
