@@ -37,7 +37,7 @@ export const api = {
   // Projects
   getProjects: (params?: Record<string, string>) => {
     const q = params ? '?' + new URLSearchParams(params) : '';
-    return request(`/api/projects${q}`);
+    return request(`/api/projects/${q}`);
   },
   getProject: (id: string) => request(`/api/projects/${id}`),
   createProject: (data: any) => request('/api/projects/', { method: 'POST', body: JSON.stringify(data) }),
@@ -48,7 +48,7 @@ export const api = {
   getStateAnalytics: (state: string) => request(`/api/analytics/state/${encodeURIComponent(state)}`),
 
   // Parcels
-  getParcels: (projectId?: string) => request(`/api/parcels${projectId ? `?project_id=${projectId}` : ''}`),
+  getParcels: (projectId?: string) => request(`/api/parcels/${projectId ? `?project_id=${projectId}` : ''}`),
   getParcel: (id: string) => request(`/api/parcels/${id}`),
 
   // AI & Analytics
@@ -87,7 +87,7 @@ export const api = {
     if (status) params.append('status', status);
     if (projectId) params.append('project_id', projectId);
     const q = params.toString() ? `?${params.toString()}` : '';
-    return request(`/api/compensation${q}`);
+    return request(`/api/compensation/${q}`);
   },
   updateCompensationStatus: (id: string, status: string) => request(`/api/compensation/${id}/status?new_status=${status}`, { method: 'PUT' }),
   calculateAward: (data: any) => request('/api/compensation/calculate-award', { method: 'POST', body: JSON.stringify(data) }),
@@ -95,21 +95,21 @@ export const api = {
   // Disputes
   getDisputes: (params?: Record<string, string>) => {
     const q = params ? '?' + new URLSearchParams(params) : '';
-    return request(`/api/disputes${q}`);
+    return request(`/api/disputes/${q}`);
   },
   resolveDispute: (id: string, notes: string) =>
     request(`/api/disputes/${id}/resolve?resolution_notes=${encodeURIComponent(notes)}`, { method: 'PUT' }),
   fileDispute: (data: any) => request('/api/disputes/', { method: 'POST', body: JSON.stringify(data) }),
 
   // Documents & AI Compliance
-  getDocuments: (projectId?: string) => request(`/api/documents${projectId ? `?project_id=${projectId}` : ''}`),
+  getDocuments: (projectId?: string) => request(`/api/documents/${projectId ? `?project_id=${projectId}` : ''}`),
   uploadDocument: (formData: FormData) => request('/api/documents/upload', { method: 'POST', body: formData }),
 
   // Land Bank & Encroachments
   getLandBankSummary: () => request('/api/land-bank/summary'),
   getEncroachments: (params?: Record<string, string>) => {
     const q = params ? '?' + new URLSearchParams(params) : '';
-    return request(`/api/land-bank/encroachments${q}`);
+    return request(`/api/land-bank/encroachments/${q}`);
   },
   reportEncroachment: (data: any) => request('/api/land-bank/encroachments', { method: 'POST', body: JSON.stringify(data) }),
   updateEncroachmentStatus: (id: string, status: string, notes?: string) =>
@@ -120,7 +120,7 @@ export const api = {
   triggerIntegrationSync: (systemKey: string) => request(`/api/integrations/sync/${systemKey}`, { method: 'POST' }),
 
   // Notifications & Outbox
-  getNotifications: (unreadOnly?: boolean) => request(`/api/notifications${unreadOnly ? '?unread_only=true' : ''}`),
+  getNotifications: (unreadOnly?: boolean) => request(`/api/notifications/${unreadOnly ? '?unread_only=true' : ''}`),
   markNotifRead: (id: string) => request(`/api/notifications/${id}/read`, { method: 'PUT' }),
   markAllNotifsRead: () => request('/api/notifications/read-all', { method: 'PUT' }),
   getNotificationsOutbox: () => request('/api/notifications/outbox'),
@@ -128,7 +128,7 @@ export const api = {
   // Audit Log & Cryptographic Verification
   getAuditLogs: (params?: Record<string, string>) => {
     const q = params ? '?' + new URLSearchParams(params) : '';
-    return request(`/api/audit${q}`);
+    return request(`/api/audit/${q}`);
   },
   verifyAuditTrail: () => request('/api/audit/verify'),
 
@@ -138,7 +138,7 @@ export const api = {
     if (parcelId) params.append('parcel_id', parcelId);
     if (projectId) params.append('project_id', projectId);
     const q = params.toString() ? `?${params.toString()}` : '';
-    return request(`/api/rr${q}`);
+    return request(`/api/rr/${q}`);
   },
   updateRRStatus: (id: string, status: string, notes?: string) =>
     request(`/api/rr/${id}/status?new_status=${status}${notes ? `&notes=${encodeURIComponent(notes)}` : ''}`, { method: 'PUT' }),

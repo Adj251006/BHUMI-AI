@@ -91,14 +91,6 @@ class RefreshRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-class TokenResponse(BaseModel):
-    """Response returned on successful login or token refresh."""
-
-    access_token: str = Field(..., description="Short-lived JWT access token")
-    refresh_token: str = Field(..., description="Long-lived JWT refresh token")
-    token_type: str = Field(default="bearer", description="Token type (always 'bearer')")
-
-
 class UserResponse(BaseModel):
     """Public user profile — excludes password_hash and internal fields."""
 
@@ -114,6 +106,15 @@ class UserResponse(BaseModel):
     model_config = {
         "from_attributes": True,  # Allow ORM model → Pydantic conversion
     }
+
+
+class TokenResponse(BaseModel):
+    """Response returned on successful login or token refresh."""
+
+    access_token: str = Field(..., description="Short-lived JWT access token")
+    refresh_token: str = Field(..., description="Long-lived JWT refresh token")
+    token_type: str = Field(default="bearer", description="Token type (always 'bearer')")
+    user: UserResponse | None = Field(default=None, description="Authenticated user profile")
 
 
 class MessageResponse(BaseModel):

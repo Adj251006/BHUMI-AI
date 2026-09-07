@@ -32,10 +32,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener('auth:unauthorized', handleUnauthorized);
 
     const t = localStorage.getItem('bhumi_token');
+    const savedUser = localStorage.getItem('bhumi_user');
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+        setIsLoading(false);
+      } catch (_) {}
+    }
     if (t) {
       setToken(t);
       api.me()
-        .then(setUser)
+        .then((u) => {
+          setUser(u);
+          localStorage.setItem('bhumi_user', JSON.stringify(u));
+        })
         .catch(() => {
           logout();
         })
@@ -54,13 +64,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const t = data.access_token;
     localStorage.setItem('bhumi_token', t);
     setToken(t);
-    const me = await api.me();
+    const me = data.user || (await api.me());
+    localStorage.setItem('bhumi_user', JSON.stringify(me));
     setUser(me);
     return me;
   };
 
   const logout = () => {
     localStorage.removeItem('bhumi_token');
+    localStorage.removeItem('bhumi_user');
     setToken(null);
     setUser(null);
   };

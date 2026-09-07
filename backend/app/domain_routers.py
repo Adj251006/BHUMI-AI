@@ -27,7 +27,10 @@ from app.models.enums import (
 # COMPENSATION ROUTER
 # ============================================================
 comp_router = APIRouter()
+_COMP_CACHE: dict[str, tuple[float, list[dict]]] = {}
 
+def invalidate_comp_cache():
+    _COMP_CACHE.clear()
 
 @comp_router.get("/")
 async def list_compensation(
@@ -36,6 +39,14 @@ async def list_compensation(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    import time
+    cache_key = f"{status}:{project_id}"
+    now = time.time()
+    if cache_key in _COMP_CACHE:
+        ts, data = _COMP_CACHE[cache_key]
+        if now - ts < 30.0:
+            return data
+
     q = select(Compensation)
     if project_id:
         from app.models.award import Award
@@ -45,7 +56,7 @@ async def list_compensation(
         q = q.where(Compensation.status == status)
     result = await db.execute(q.order_by(Compensation.created_at.desc()).limit(100))
     items = result.scalars().all()
-    return [
+    data = [
         {
             "id": str(c.id),
             "award_id": str(c.award_id),
@@ -58,6 +69,8 @@ async def list_compensation(
         }
         for c in items
     ]
+    _COMP_CACHE[cache_key] = (now, data)
+    return data
 
 
 class AwardCalculationRequest(BaseModel):
@@ -181,7 +194,10 @@ async def assign_field_verification(
 # DISPUTES ROUTER
 # ============================================================
 dispute_router = APIRouter()
+_DISPUTE_CACHE: dict[str, tuple[float, list[dict]]] = {}
 
+def invalidate_dispute_cache():
+    _DISPUTE_CACHE.clear()
 
 @dispute_router.get("/")
 async def list_disputes(
@@ -191,6 +207,14 @@ async def list_disputes(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    import time
+    cache_key = f"{project_id}:{parcel_id}:{status}"
+    now = time.time()
+    if cache_key in _DISPUTE_CACHE:
+        ts, data = _DISPUTE_CACHE[cache_key]
+        if now - ts < 30.0:
+            return data
+
     q = select(Dispute).where(Dispute.deleted_at.is_(None))
     if project_id:
         from app.models.land_parcel import LandParcel
@@ -201,7 +225,7 @@ async def list_disputes(
         q = q.where(Dispute.status == status)
     result = await db.execute(q.order_by(Dispute.created_at.desc()).limit(100))
     items = result.scalars().all()
-    return [
+    data = [
         {
             "id": str(d.id),
             "parcel_id": str(d.parcel_id),
@@ -217,6 +241,8 @@ async def list_disputes(
         }
         for d in items
     ]
+    _DISPUTE_CACHE[cache_key] = (now, data)
+    return data
 
 
 class DisputeCreate(BaseModel):
@@ -582,7 +608,13 @@ async def transition_project_stage(
     }
 
 
+_TASK_CACHE: dict[str, tuple[float, list[dict]]] = {}
+
+def invalidate_task_cache():
+    _TASK_CACHE.clear()
+
 @workflow_router.get("/tasks")
+@workflow_router.get("/tasks/")
 async def list_tasks(
     project_id: Optional[uuid.UUID] = None,
     assigned_to: Optional[uuid.UUID] = None,
@@ -590,6 +622,14 @@ async def list_tasks(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    import time
+    cache_key = f"{current_user.id}:{project_id}:{assigned_to}:{status}"
+    now = time.time()
+    if cache_key in _TASK_CACHE:
+        ts, data = _TASK_CACHE[cache_key]
+        if now - ts < 30.0:
+            return data
+
     q = select(WorkflowTask).where(WorkflowTask.deleted_at.is_(None))
     # Field officers see only their tasks
     if current_user.role == UserRole.FIELD_OFFICER:
@@ -602,7 +642,7 @@ async def list_tasks(
         q = q.where(WorkflowTask.status == status)
     result = await db.execute(q.order_by(WorkflowTask.created_at.desc()).limit(100))
     tasks = result.scalars().all()
-    return [
+    data = [
         {
             "id": str(t.id),
             "project_id": str(t.project_id),
@@ -620,6 +660,8 @@ async def list_tasks(
         }
         for t in tasks
     ]
+    _TASK_CACHE[cache_key] = (now, data)
+    return data
 
 
 @workflow_router.put("/tasks/{task_id}/status")
@@ -796,7 +838,10 @@ async def review_verification(
 # NOTIFICATIONS ROUTER
 # ============================================================
 notif_router = APIRouter()
+_NOTIF_CACHE: dict[str, tuple[float, list[dict]]] = {}
 
+def invalidate_notif_cache():
+    _NOTIF_CACHE.clear()
 
 @notif_router.get("/")
 async def list_notifications(
@@ -804,6 +849,14 @@ async def list_notifications(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    import time
+    cache_key = f"{current_user.id}:{unread_only}"
+    now = time.time()
+    if cache_key in _NOTIF_CACHE:
+        ts, data = _NOTIF_CACHE[cache_key]
+        if now - ts < 20.0:
+            return data
+
     from sqlalchemy import or_
     q = select(SystemNotification).where(
         or_(
@@ -815,7 +868,7 @@ async def list_notifications(
         q = q.where(SystemNotification.is_read == False)  # noqa: E712
     result = await db.execute(q.order_by(SystemNotification.created_at.desc()).limit(50))
     items = result.scalars().all()
-    return [
+    data = [
         {
             "id": str(n.id),
             "title": n.title,
@@ -830,6 +883,8 @@ async def list_notifications(
         }
         for n in items
     ]
+    _NOTIF_CACHE[cache_key] = (now, data)
+    return data
 
 
 @notif_router.get("/outbox")

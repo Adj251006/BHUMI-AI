@@ -42,13 +42,9 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      api.getNationalAnalytics().catch(() => null),
-      api.getRisk('12345678-1234-5678-1234-567812345678').catch(() => null),
-    ])
-      .then(([a, r]) => {
+    api.getNationalAnalytics()
+      .then((a) => {
         if (a) setAnalytics(a);
-        if (r) setCriticalRisk(r);
       })
       .catch(console.error)
       .finally(() => setLoading(false));

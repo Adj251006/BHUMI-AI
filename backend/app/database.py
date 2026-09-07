@@ -40,12 +40,10 @@ def _to_async_url(url: str) -> str:
 
 engine = create_async_engine(
     _to_async_url(settings.database_url),
-    # Pool settings are conservative — Supabase free tier allows ~60 connections.
-    pool_size=5,
-    max_overflow=10,
-    # Verify connections before checkout (handles Supabase idle disconnects).
-    pool_pre_ping=True,
-    # Disable verbose SQL logging for clean terminal and performance
+    pool_size=15,
+    max_overflow=25,
+    pool_recycle=300,
+    pool_pre_ping=False,
     echo=False,
 )
 

@@ -15,18 +15,33 @@ from app.parcels.service import attach_geometry, get_parcels_in_bbox, get_projec
 router = APIRouter()
 
 
+from sqlalchemy.orm import defer
+import time
+
+_PARCELS_CACHE: dict[str, tuple[float, list[dict]]] = {}
+
+def invalidate_parcels_cache():
+    _PARCELS_CACHE.clear()
+
 @router.get("/")
 async def list_parcels(
     project_id: Optional[uuid.UUID] = None,
     session: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    q = select(LandParcel).where(LandParcel.deleted_at.is_(None))
+    cache_key = str(project_id or "all")
+    now = time.time()
+    if cache_key in _PARCELS_CACHE:
+        ts, data = _PARCELS_CACHE[cache_key]
+        if now - ts < 30.0:
+            return data
+
+    q = select(LandParcel).options(defer(LandParcel.geometry)).where(LandParcel.deleted_at.is_(None))
     if project_id:
         q = q.where(LandParcel.project_id == project_id)
     result = await session.execute(q.limit(200))
     parcels = result.scalars().all()
-    return [
+    data = [
         {
             "id": str(p.id),
             "project_id": str(p.project_id),
@@ -42,6 +57,8 @@ async def list_parcels(
         }
         for p in parcels
     ]
+    _PARCELS_CACHE[cache_key] = (now, data)
+    return data
 
 
 @router.get("/spatial", response_model=GeoJSONFeatureCollection)

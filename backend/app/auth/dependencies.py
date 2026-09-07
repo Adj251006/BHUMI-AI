@@ -48,6 +48,16 @@ from app.models.user import User
 # FastAPI uses this for the Swagger UI "Authorize" button.
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
+import time
+
+_USER_CACHE: dict[str, tuple[float, User]] = {}
+
+def invalidate_user_cache(user_id: str = None):
+    if user_id:
+        _USER_CACHE.pop(str(user_id), None)
+    else:
+        _USER_CACHE.clear()
+
 
 # ---------------------------------------------------------------------------
 # Core dependency: extract current user from JWT
@@ -94,7 +104,7 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # 3. Load user from database
+    # 3. Load user from database (cached in memory for 60s to avoid 400ms network roundtrip per request)
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(
@@ -102,6 +112,12 @@ async def get_current_user(
             detail="Token missing user identifier",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    now = time.time()
+    if user_id in _USER_CACHE:
+        ts, cached_user = _USER_CACHE[user_id]
+        if now - ts < 60.0:
+            return cached_user
 
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
@@ -128,6 +144,7 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    _USER_CACHE[user_id] = (now, user)
     return user
 
 

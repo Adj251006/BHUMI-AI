@@ -50,6 +50,12 @@ class ProjectResponse(BaseModel):
     risk_level: str = "low"
     model_config = {"from_attributes": True}
 
+# In-memory cache for projects list to eliminate repetitive roundtrips over remote database
+_PROJECTS_CACHE: dict[str, tuple[float, list[dict]]] = {}
+
+def invalidate_projects_cache():
+    _PROJECTS_CACHE.clear()
+
 @router.get("/", response_model=list[ProjectResponse])
 async def list_projects(
     state: Optional[str] = None,
@@ -59,6 +65,14 @@ async def list_projects(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    import time
+    cache_key = f"{current_user.id}:{state}:{district}:{status_filter}:{risk_level}"
+    now = time.time()
+    if cache_key in _PROJECTS_CACHE:
+        ts, cached_data = _PROJECTS_CACHE[cache_key]
+        if now - ts < 30.0:
+            return [ProjectResponse(**item) for item in cached_data]
+
     q = select(Project).where(Project.deleted_at.is_(None))
     if state:
         q = q.where(Project.state == state)
@@ -67,7 +81,8 @@ async def list_projects(
     if status_filter:
         q = q.where(Project.status == status_filter)
     # Jurisdiction scoping
-    from app.models.enums import UserRole
+    from app.models.enums import UserRole, RAndRStatus
+    from app.models.award import Award
     if current_user.role == UserRole.STATE_GOVT and current_user.state:
         q = q.where(Project.state == current_user.state)
     elif current_user.role == UserRole.DISTRICT_AUTHORITY:
@@ -78,14 +93,110 @@ async def list_projects(
 
     result = await db.execute(q.order_by(Project.created_at.desc()))
     projects = result.scalars().all()
+    if not projects:
+        return []
 
-    enriched = []
+    project_ids = [p.id for p in projects]
+
+    # Batch 1: Parcel statistics
+    parcel_stats_r = await db.execute(
+        select(
+            LandParcel.project_id,
+            func.count(LandParcel.id),
+            func.count(case((LandParcel.possession_status == PossessionStatus.POSSESSED, 1)))
+        )
+        .where(LandParcel.project_id.in_(project_ids))
+        .group_by(LandParcel.project_id)
+    )
+    parcels_map = {row[0]: (row[1], row[2]) for row in parcel_stats_r.all()}
+
+    # Batch 2: Compensation pending statistics
+    comp_stats_r = await db.execute(
+        select(LandParcel.project_id, func.count(Compensation.id))
+        .join(Award, Compensation.award_id == Award.id)
+        .join(LandParcel, Award.parcel_id == LandParcel.id)
+        .where(
+            LandParcel.project_id.in_(project_ids),
+            Compensation.status.in_((CompensationStatus.PENDING, CompensationStatus.UNDER_VERIFICATION))
+        )
+        .group_by(LandParcel.project_id)
+    )
+    comp_map = {row[0]: row[1] for row in comp_stats_r.all()}
+
+    # Batch 3: Disputes statistics
+    disp_stats_r = await db.execute(
+        select(LandParcel.project_id, func.count(Dispute.id))
+        .join(LandParcel, Dispute.parcel_id == LandParcel.id)
+        .where(
+            LandParcel.project_id.in_(project_ids),
+            Dispute.status == DisputeStatus.OPEN
+        )
+        .group_by(LandParcel.project_id)
+    )
+    disp_map = {row[0]: row[1] for row in disp_stats_r.all()}
+
+    # Batch 4: R&R pending statistics
+    rr_stats_r = await db.execute(
+        select(LandParcel.project_id, func.count(Family.id))
+        .join(LandParcel, Family.parcel_id == LandParcel.id)
+        .where(
+            LandParcel.project_id.in_(project_ids),
+            Family.r_and_r_status != RAndRStatus.RESETTLED
+        )
+        .group_by(LandParcel.project_id)
+    )
+    rr_map = {row[0]: row[1] for row in rr_stats_r.all()}
+
+    # Batch 5: AI risk predictions
+    risks_r = await db.execute(
+        select(AIRiskPrediction)
+        .where(AIRiskPrediction.project_id.in_(project_ids))
+        .order_by(AIRiskPrediction.created_at.desc())
+    )
+    risk_map = {}
+    for r in risks_r.scalars().all():
+        if r.project_id not in risk_map:
+            risk_map[r.project_id] = r
+
+    enriched_dicts = []
+    enriched_responses = []
     for p in projects:
-        pr = await _enrich_project(db, p)
-        if risk_level and pr.get("risk_level") != risk_level:
+        ptot, pacq = parcels_map.get(p.id, (0, 0))
+        c_pend = comp_map.get(p.id, 0)
+        d_open = disp_map.get(p.id, 0)
+        r_pend = rr_map.get(p.id, 0)
+        rk = risk_map.get(p.id)
+        r_score = rk.risk_score if rk else 0.0
+        r_delay = rk.delay_probability if rk else 0.0
+        r_level = rk.risk_level.value if rk else "low"
+
+        if risk_level and r_level != risk_level:
             continue
-        enriched.append(ProjectResponse(**pr))
-    return enriched
+
+        item = {
+            "id": p.id,
+            "name": p.name,
+            "ministry": p.ministry,
+            "sector": p.sector,
+            "description": p.description,
+            "status": p.status.value,
+            "state": p.state,
+            "district": p.district,
+            "created_at": p.created_at,
+            "total_parcels": ptot,
+            "acquired_parcels": pacq,
+            "compensation_pending": c_pend,
+            "disputed_parcels": d_open,
+            "rr_pending": r_pend,
+            "risk_score": r_score,
+            "delay_probability": r_delay,
+            "risk_level": r_level,
+        }
+        enriched_dicts.append(item)
+        enriched_responses.append(ProjectResponse(**item))
+
+    _PROJECTS_CACHE[cache_key] = (now, enriched_dicts)
+    return enriched_responses
 
 @router.post("/", response_model=ProjectResponse, status_code=201)
 async def create_project(

@@ -38,6 +38,9 @@ async def lifespan(app: FastAPI):
         async with engine.begin() as conn:
             await conn.execute(text("SELECT 1"))
         print("✓ Database connection verified")
+        import asyncio
+        from app.analytics.router import warm_national_cache
+        asyncio.create_task(warm_national_cache())
     except Exception as e:
         print(f"✗ Database connection failed: {e}")
         raise
