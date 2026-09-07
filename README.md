@@ -53,20 +53,23 @@ Land acquisition in India across national highways, railways, and industrial cor
 
 ## ⚡ Key Capabilities
 
-| Module | Core Functionality |
-|---|---|
-| **National Command Center** | Real-time statutory KPIs, acquisition progress meters, state-wise budget utilization, and critical project alerts. |
-| **State & District Drill-down** | Interactive administrative navigation from national overview to State level (e.g. Rajasthan, Maharashtra) down to individual districts (e.g. Jaipur, Pune). |
-| **Interactive GIS Engine** | Leaflet + PostGIS interactive parcel visualization with color-coded statutory states (Not Acquired, Notified, Awarded, Disbursed, Possessed). |
-| **RFCTLARR Statutory Workflow** | 7-stage statutory lifecycle tracking (Proposal → Preliminary Survey → Section 11 Notification → Section 19 Declaration → Award → Compensation → Possession). |
-| **Compensation & DBT Tracking** | Granular disbursement monitoring, award declarations, bank transaction references, and DBT reconciliation status. |
-| **R&R Management** | Rehabilitation and Resettlement entitlement tracking for Project-Affected Families (PAF) including housing grants and livelihood assistance. |
-| **Dispute Resolution Hub** | Centralized legal case registry, court levels, stay orders, and risk recalculation upon case resolution. |
-| **Field Officer Portal** | Mobile-responsive portal for field verification officers to record on-ground GPS coordinates, survey validation, and photo evidence. |
-| **Citizen Transparency Portal** | Public, unauthenticated search portal where affected landowners can track land acquisition status, awards, and compensation by survey number. |
-| **AI Risk & Anomaly Engine** | Evaluates delay probability, budget overrun risk, and flags anomalous valuation patterns across project parcels. |
-| **BHUMI AI Copilot** | Grounded conversational AI assistant powered by Google Gemini (with an intelligent, database-grounded local reasoning fallback). |
-| **Statutory Audit Trail** | Immutable log recording every user action, approval, dispute update, and AI recommendation execution. |
+| Module | Core Functionality | Statutory & Technical Details |
+|---|---|---|
+| **National Command Center** | Real-time statutory KPIs, acquisition progress meters, state-wise budget utilization, and critical project alerts. | 4-tier zoomable hierarchy: National MoRD $\to$ State Nodal $\to$ District CALA $\to$ Cadastral Parcel. |
+| **State & District Drill-down** | Interactive administrative navigation from national overview to State level down to individual districts. | Scoped role authorization, district-level dispute filtering, and SLA countdowns. |
+| **Interactive GIS Engine** | Leaflet + PostGIS interactive parcel visualization with color-coded statutory states. | Styled vector polygons, project corridor centerline overlay, and click-to-inspect parcel modal. |
+| **RFCTLARR (2013) State Machine** | Strict 12-stage legally constrained acquisition pipeline with statutory SLA clocks. | Enforces Section 3 Requisition $\to$ Section 4 SIA $\to$ Section 11 Gazette $\to$ Section 15 Objections $\to$ Section 19 Declaration $\to$ Section 23 Award $\to$ Section 38 Possession. |
+| **Route Corridor Comparison** | PostGIS buffer-and-intersect multi-criteria route optimization. | Evaluates Route A (Greenfield Bypass) vs Route B (River Alignment) vs Route C (Elevated Corridor) on cost, parcels affected, and displaced families. |
+| **Statutory Award Calculator** | Transparent Sections 26–30 compensation breakdown. | Base Market Value $\times$ Rural Multiplier (1.0 to 2.0) $+$ Assets $+$ 100% Mandatory Solatium $+$ 12% Interest under Section 30(3). |
+| **Anti-Corruption Anomaly Shield** | Cross-village automated cadastral regression. | Flags awards deviating from village/land-type median (e.g. 4.2x outlier) with automated Escrow Hold badge. |
+| **Post-Possession Land Bank** | Post-acquisition inventory and encroachment surveillance. | Closes the "Management" half of SIH26016: categorizes land as utilized, surplus, or vacant; simulates Sentinel-2 NDVI change detection. |
+| **SIA & Public Consent Module** | Social Impact Assessment compliance engine. | Enforces Section 2(2) consent thresholds: 70% for PPP projects and 80% for Private projects. |
+| **National Integration Layer** | Abstract interface & concrete adapters for national platforms. | Direct adapters for DILRMP (RoR titles), e-Courts (stay orders), PFMS (DBT status), and Bhu-Naksha (cadastral shapes). |
+| **Citizen Transparency Portal** | Mobile-first landowner portal with English/Hindi bilingual toggle. | Phone + OTP authentication, public survey tracking (e.g. 100/1), award transparency, and Section 15 objection filing. |
+| **Field Officer Mobile Portal** | Geofenced on-ground verification with live camera photo capture. | Browser `navigator.geolocation`, camera evidence capture, and true spherical **Haversine formula** with $\cos(\text{lat})$ correction. |
+| **Cryptographic Audit Trail** | Tamper-evident SHA-256 block chain (`prev_hash` $\to$ `hash`). | Mathematical proof of record integrity with live UI verification button proving zero broken blocks. |
+| **External Notification Gateway** | Multi-channel SMS and Email alerts dispatcher. | Dispatches simulated SMS/Email notifications on DBT payouts, Section 11 notices, and hearing dates with an outbox log. |
+| **BHUMI AI Copilot** | Grounded conversational assistant with live database access. | Powered by Google Gemini with an intelligent, database-grounded local reasoning fallback. |
 
 ---
 
@@ -89,14 +92,14 @@ Land acquisition in India across national highways, railways, and industrial cor
               ┌─────────────────────┘         │         │         │       └─────────────────────┐
               ▼                               ▼         ▼         ▼                             ▼
    ┌───────────────────────┐         ┌─────────────────────────┐ ┌───────────────────┐ ┌───────────────────┐
-   │  Authentication/RBAC  │         │     Domain Routers      │ │   AI Services     │ │  Citizen Portal   │
-   │  - JWT Bearer Tokens  │         │  - Projects & Parcels   │ │  - Risk Engine    │ │  - Public Search  │
-   │  - Passlib (Bcrypt)   │         │  - Workflow & Tasks     │ │  - Anomaly Engine │ │  - Parcel Status  │
-   │  - 7 Role Profiles    │         │  - Compensation & DBT   │ │  - Gemini LLM     │ │  - Compensation   │
-   └───────────────────────┘         │  - Disputes & R&R       │ │  - Local Fallback │ └───────────────────┘
-                                     │  - Field Verification   │ └─────────┬─────────┘
-                                     │  - System Notifications │           │
-                                     │  - Audit Trail          │           ▼
+   │  Authentication/RBAC  │         │  Statutory State Engine │ │   AI Services     │ │  Citizen Portal   │
+   │  - JWT Bearer Tokens  │         │  - 12 RFCTLARR Stages   │ │  - Delay Engine   │ │  - Phone + OTP    │
+   │  - Passlib (Bcrypt)   │         │  - Statutory SLA Clocks │ │  - Anomaly Shield │ │  - Hindi/English  │
+   │  - 7 Role Profiles    │         │  - Section 15 Objections│ │  - GIS Corridors  │ │  - Public Tracker │
+   └───────────────────────┘         │  - Sec 26-30 Calculator │ │  - Gemini Copilot │ └───────────────────┘
+                                     │  - Post-Possession Bank │ └─────────┬─────────┘
+                                     │  - Cryptographic Audit  │           │
+                                     │  - National Integrations│           ▼
                                      └────────────┬────────────┘  ┌───────────────────┐
                                                   │               │ Google Gemini API │
                                                   ▼               │ (Optional / HTTPS)│
@@ -120,6 +123,8 @@ Land acquisition in India across national highways, railways, and industrial cor
 BHUMI-AI/
 ├── README.md                      # Primary Project Documentation (This File)
 ├── .gitignore                     # Git Exclusion Rules
+├── docs/                          # Comprehensive Technical Documentation
+│   └── PROJECT_AUDIT.md           # Statutory Audit & Gap Analysis Report
 │
 ├── backend/                       # FastAPI Backend Application
 │   ├── README.md                  # Backend Specific Guide & API Documentation
@@ -137,26 +142,40 @@ BHUMI-AI/
 │   │   ├── database.py            # Async Engine (asyncpg) & DB Session Dependency
 │   │   ├── domain_routers.py      # Unified Routers (Compensation, Disputes, Docs, etc.)
 │   │   │
-│   │   ├── ai/                    # AI Copilot, Risk Engine & LLM Provider
+│   │   ├── ai/                    # AI Copilot, Risk Engine & GIS Corridor
 │   │   │   ├── router.py          # /api/ai Endpoints (Risk, Anomalies, Copilot)
+│   │   │   ├── corridor.py        # PostGIS Multi-Route Corridor Comparison Engine
+│   │   │   ├── documents.py       # AI Statutory Document Compliance Parser
 │   │   │   ├── provider.py        # GeminiProvider & LocalFallbackProvider
 │   │   │   └── tools.py           # Database Context Aggregation for AI
 │   │   │
-│   │   ├── analytics/             # /api/analytics (National & State Rollups)
-│   │   ├── audit/                 # Statutory Audit Log Service
-│   │   ├── auth/                  # JWT Authentication, Password Hashing & RBAC
-│   │   ├── models/                # SQLAlchemy ORM Models
-│   │   │   ├── base.py            # Base & Timestamp Mixin
-│   │   │   ├── enums.py           # PostgreSQL Native Enum Types
-│   │   │   ├── user.py            # User Entity
-│   │   │   ├── project.py         # Project Entity
-│   │   │   ├── land_parcel.py     # LandParcel + PostGIS Geometry
-│   │   │   ├── compensation.py    # Compensation Disbursements
-│   │   │   ├── family.py          # Project-Affected Families (R&R)
-│   │   │   └── ...                # Disputes, Documents, Tasks, Notifications
+│   │   ├── audit/                 # Cryptographically Verifiable Hash-Chain Audit
+│   │   │   └── service.py         # SHA-256 Block Chain Engine & Verify Endpoint
 │   │   │
+│   │   ├── citizen/               # Landowner Portal Backend
+│   │   │   └── router.py          # OTP Authentication & Scoped Parcel Records
+│   │   │
+│   │   ├── compensation/          # Statutory Compensation Engine
+│   │   │   └── calculator.py      # Sections 26–30 Award & Solatium Calculator
+│   │   │
+│   │   ├── integrations/          # National E-Governance Integration Layer
+│   │   │   ├── adapters.py        # DILRMP, e-Courts, PFMS, Bhu-Naksha Adapters
+│   │   │   └── router.py          # Integration Status & Sync Endpoints
+│   │   │
+│   │   ├── land_bank/             # Post-Possession Asset Management
+│   │   │   └── router.py          # Acquired Land Inventory & Encroachments
+│   │   │
+│   │   ├── notifications/         # Multi-Channel Alert Gateway
+│   │   │   └── gateway.py         # SMS & Email Dispatcher with Outbox Log
+│   │   │
+│   │   ├── workflow/              # Statutory RFCTLARR State Engine
+│   │   │   └── engine.py          # 12-Stage Rules, SLA Limits & Role Enforcement
+│   │   │
+│   │   ├── analytics/             # /api/analytics (National & State Rollups)
+│   │   ├── auth/                  # JWT Authentication, Password Hashing & RBAC
+│   │   ├── models/                # SQLAlchemy ORM Models (LandParcel, Award, etc.)
 │   │   ├── parcels/               # /api/parcels (GIS Queries & GeoJSON)
-│   │   ├── projects/              # /api/projects (Project Lifecycle & CRUD)
+│   │   ├── projects/              # /api/projects (Project Lifecycle & Consent)
 │   │   ├── proposals/             # Proposal Management
 │   │   └── rr/                    # /api/rr (Rehabilitation & Resettlement)
 │   │
@@ -172,7 +191,7 @@ BHUMI-AI/
     │
     ├── public/                    # Static Assets
     └── src/                       # React Application Source
-        ├── main.tsx               # DOM Mounting Point
+        ├── main.tsx               # DOM Mounting Point (Leaflet CSS imported)
         ├── App.tsx                # Client Routing & Role-Guarded Protected Routes
         ├── index.css              # Global Design Tokens, Layout, High-Contrast Themes
         │
@@ -186,23 +205,24 @@ BHUMI-AI/
         │   ├── Layout.tsx         # Responsive Shell, High-Contrast Sidebar, Header
         │   ├── Login.tsx          # 60/40 Split Auth Screen + 1-Click Demo Evaluation
         │   ├── Map.tsx            # Leaflet PostGIS GIS Visualization & Color Codes
-        │   ├── NotificationDropdown.tsx # Functional Bell Dropdown & Read Actions
         │   └── ...
         │
         └── pages/                 # Full Page Views
             ├── Dashboard.tsx      # National Command Center
             ├── StateDashboard.tsx # State Admin Drill-down View
             ├── Projects.tsx       # Project Directory & Filters
-            ├── ProjectDetail.tsx  # Project Details, Embedded GIS, Statutory Tabs
-            ├── Compensation.tsx   # DBT & Compensation Disbursement Ledger
-            ├── Disputes.tsx       # Legal Case Tracking & Dispute Resolution
+            ├── ProjectDetail.tsx  # Route Corridor Tool, SLA Clocks & Consent Metrics
+            ├── Compensation.tsx   # Award Calculator & Anti-Corruption Anomaly Shield
+            ├── LandBank.tsx       # Post-Possession Land Bank & Encroachment Shield
+            ├── Disputes.tsx       # Section 15 Objections & Dispute Resolution
+            ├── Documents.tsx      # Multipart File Upload & AI Document Verification
+            ├── Workflow.tsx       # Statutory RFCTLARR State Machine Pipeline
+            ├── FieldDashboard.tsx # Geolocation & Camera Evidence Capture
+            ├── CitizenPortal.tsx  # Mobile-First Citizen Portal (English + हिन्दी)
+            ├── AuditLog.tsx       # Cryptographically Verified SHA-256 Hash Chain
             ├── RRManagement.tsx   # Rehabilitation & Resettlement Records
-            ├── Documents.tsx      # Document Repository & AI Intelligence
-            ├── Workflow.tsx       # Statutory Tasks & Approval Pipeline
-            ├── FieldDashboard.tsx # Field Verification Portal
-            ├── CitizenPortal.tsx  # Public Landowner Tracking Portal
-            ├── AuditLog.tsx       # Compliance Audit Trail
-            └── Analytics.tsx      # Multi-dimensional Data Visualizations
+            ├── Simulator.tsx      # Unified Risk Impact Simulator
+            └── Analytics.tsx      # National & State Trend Charts
 ```
 
 ---
