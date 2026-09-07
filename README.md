@@ -271,7 +271,36 @@ Before running the application, ensure the following software is installed on yo
 
 ## 🚀 Quick Start Guide
 
-Follow these step-by-step instructions to get the complete BHUMI-AI platform running locally.
+### ⚡ 1-Click Quickstart (Recommended)
+
+BHUMI-AI includes automated 1-click launchers for every operating system. The pre-configured cloud database is already wired up in `.env.example`, so you don't even need to install PostgreSQL or PostGIS locally!
+
+#### 🍏 macOS & 🐧 Linux:
+```bash
+git clone https://github.com/Adj251006/BHUMI-AI.git
+cd BHUMI-AI
+./start.sh
+```
+> `start.sh` automatically creates your Python virtual environment, installs backend & frontend dependencies, starts both servers, and opens `http://localhost:5173` in your default browser!
+
+#### 🪟 Windows:
+Double-click `start.bat` or run in Command Prompt:
+```cmd
+git clone https://github.com/Adj251006/BHUMI-AI.git
+cd BHUMI-AI
+start.bat
+```
+
+#### 🐳 Docker (One Command for Any OS):
+```bash
+docker compose up
+```
+
+---
+
+### 🛠️ Manual Step-by-Step Setup (Alternative)
+
+If you prefer setting up each component manually:
 
 ### 1. Clone Repository
 

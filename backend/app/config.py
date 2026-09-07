@@ -20,8 +20,8 @@ class Settings(BaseSettings):
         environment: Runtime environment — controls debug logging, etc.
     """
 
-    database_url: str
-    secret_key: str
+    database_url: str = "postgresql://postgres.ffxsuugwobmwjbguglqi:Aaryan%40251006@15.165.245.138:5432/postgres?sslmode=require"
+    secret_key: str = "bhumi-ai-production-super-secret-key-sih2026-default"
     environment: str = "development"
 
     # JWT settings (Module 2)
