@@ -300,18 +300,7 @@ docker compose up
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FAdj251006%2FBHUMI-AI)
 - Click the button above or import the repository at [vercel.com/new](https://vercel.com/new).
 - The repository is pre-configured with `vercel.json` for instant Vite production builds and React Router SPA fallback routing.
-
-#### 🎈 Deploy Live to Streamlit Cloud (100% Free 1-Click Python Hosting):
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/deploy?repository=Adj251006/BHUMI-AI&branch=main&mainModule=streamlit_app.py)
-- Go to **[share.streamlit.io](https://share.streamlit.io/)**.
-- Connect your GitHub and select repository **`Adj251006/BHUMI-AI`**.
-- Set **Main file path**: `streamlit_app.py`.
-- Click **Deploy!** — Streamlit Cloud automatically reads the root `requirements.txt` and deploys your interactive dashboard in 30 seconds!
-
-To run Streamlit locally anytime:
-```bash
-streamlit run streamlit_app.py
-```
+- See the full [Deployment Guide (docs/DEPLOYMENT_GUIDE.md)](docs/DEPLOYMENT_GUIDE.md) for backend hosting on Render / Railway.
 
 ---
 
