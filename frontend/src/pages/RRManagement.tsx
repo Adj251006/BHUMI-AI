@@ -73,7 +73,7 @@ export default function RRManagement() {
                     <td>{f.employment_provided ? '✓ Offered' : '✗ Pending'}</td>
                     <td>
                       <span className={`badge ${f.r_and_r_status === 'resettled' ? 'badge-success' : 'badge-warning'}`}>
-                        {f.r_and_r_status?.toUpperCase()}
+                        {(f.r_and_r_status || 'pending').replace(/_/g, ' ').toUpperCase()}
                       </span>
                     </td>
                     <td>

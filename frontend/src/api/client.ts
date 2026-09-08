@@ -273,15 +273,52 @@ function getMockFallbackResponse(path: string, options: RequestInit): any {
   // 12. Compensation
   if (path.startsWith('/api/compensation/')) {
     return [
-      { id: 'cmp-01', parcel_id: 'pcl-001', award_amount: 4500000, status: 'Paid', payment_reference: 'PFMS-982103', beneficiary_name: 'Ramesh Kumar' },
-      { id: 'cmp-02', parcel_id: 'pcl-002', award_amount: 3200000, status: 'Pending', payment_reference: null, beneficiary_name: 'Suresh Patel' },
+      { id: 'cmp-01', parcel_id: 'pcl-001', award_amount: 4500000, status: 'disbursed', payment_reference: 'PFMS-982103', beneficiary_name: 'Ramesh Kumar', beneficiary_account: 'SBI-****-8921', disbursed_amount: 4500000, disbursed_at: '2026-08-20T10:00:00.000Z' },
+      { id: 'cmp-02', parcel_id: 'pcl-002', award_amount: 3200000, status: 'under_verification', payment_reference: null, beneficiary_name: 'Suresh Patel', beneficiary_account: 'HDFC-****-4102', disbursed_amount: 3200000 },
+      { id: 'cmp-03', parcel_id: 'pcl-003', award_amount: 5800000, status: 'pending', payment_reference: null, beneficiary_name: 'Geeta Devi', beneficiary_account: 'PNB-****-1093', disbursed_amount: 5800000 },
     ];
   }
 
   // 13. Disputes
   if (path.startsWith('/api/disputes/')) {
     return [
-      { id: 'dsp-01', parcel_id: 'pcl-002', claimant_name: 'Suresh Patel', dispute_type: 'Ownership Title', status: 'Under Hearing', court_name: 'Jaipur High Court' },
+      {
+        id: 'dsp-01',
+        title: 'Survey No. 102/B Ancestral Title Dispute',
+        description: 'Claimant filed suit contesting compensation distribution among 4 co-sharers under RFCTLARR Sec 64.',
+        dispute_type: 'Ownership Title',
+        status: 'open',
+        court_case_number: 'HC-RJ-2026/8912',
+        hearing_date: '2026-09-24T10:30:00.000Z',
+      },
+      {
+        id: 'dsp-02',
+        title: 'Overlapping Parcel Boundary Objection (105/C)',
+        description: 'Neighboring landowner claims 0.4 hectare boundary encroachment on Highway alignment.',
+        dispute_type: 'Boundary Overlap',
+        status: 'under_review',
+        court_case_number: 'DC-JPR-2026/4102',
+        hearing_date: '2026-09-18T11:00:00.000Z',
+      },
+      {
+        id: 'dsp-03',
+        title: 'Tree & Well Valuation Apportionment Suit',
+        description: 'Apportionment of Section 29 asset valuation between landlord and tenant cultivator.',
+        dispute_type: 'Compensation Apportionment',
+        status: 'resolved',
+        court_case_number: 'LARR-TRIB-2026/104',
+        hearing_date: '2026-08-10T10:00:00.000Z',
+        resolved_at: '2026-08-15T14:00:00.000Z',
+      },
+      {
+        id: 'dsp-04',
+        title: 'Gram Sabha SIA Objections (Chomu Village)',
+        description: 'Objection filed regarding public hearing quorum and environmental mitigation coverage.',
+        dispute_type: 'SIA Procedure',
+        status: 'open',
+        court_case_number: 'HC-RJ-2026/9021',
+        hearing_date: '2026-09-30T10:30:00.000Z',
+      },
     ];
   }
 
@@ -289,16 +326,49 @@ function getMockFallbackResponse(path: string, options: RequestInit): any {
   if (path.startsWith('/api/documents/')) {
     return [
       { id: 'doc-01', file_name: 'Section_11_Gazette_Notice.pdf', doc_type: 'Statutory Notice', verified: true, uploaded_at: new Date().toISOString() },
+      { id: 'doc-02', file_name: 'SIA_Public_Hearing_Report.pdf', doc_type: 'SIA Study', verified: true, uploaded_at: new Date().toISOString() },
     ];
   }
 
   // 15. Land Bank & Encroachments
   if (path === '/api/land-bank/summary') {
-    return { total_land_bank_ha: 4520, available_ha: 3890, leased_ha: 630, encroachment_cases: 12 };
+    return { total_surplus_hectares: 4820, total_parcels: 142, leased_hectares: 630, encroachment_cases: 3 };
   }
   if (path.startsWith('/api/land-bank/encroachments')) {
     return [
-      { id: 'enc-01', location: 'Jaipur Sector 4', area_sqm: 1200, status: 'Notice Issued', reported_at: new Date().toISOString() },
+      {
+        id: 'enc-01',
+        survey_number: '101/A',
+        village: 'Amer',
+        district: 'Jaipur',
+        encroachment_type: 'unauthorized_construction',
+        description: 'Unauthorized perimeter concrete wall constructed on government surplus land.',
+        encroached_area_hectares: 0.45,
+        detection_source: 'satellite',
+        status: 'notice_issued',
+      },
+      {
+        id: 'enc-02',
+        survey_number: '104/C',
+        village: 'Chomu',
+        district: 'Jaipur',
+        encroachment_type: 'agricultural_squatting',
+        description: 'Seasonal crop cultivation inside reserved national highway buffer zone.',
+        encroached_area_hectares: 0.85,
+        detection_source: 'field_patrol',
+        status: 'detected',
+      },
+      {
+        id: 'enc-03',
+        survey_number: '108/2',
+        village: 'Kukas',
+        district: 'Jaipur',
+        encroachment_type: 'commercial_dumping',
+        description: 'Illegal commercial debris dumping cleared by District Revenue Collector.',
+        encroached_area_hectares: 0.30,
+        detection_source: 'satellite',
+        status: 'cleared',
+      },
     ];
   }
 
@@ -315,17 +385,80 @@ function getMockFallbackResponse(path: string, options: RequestInit): any {
   // 17. Audit Log
   if (path.startsWith('/api/audit/')) {
     if (path === '/api/audit/verify') {
-      return { verified: true, chain_hash: '0x7f83a91b2c4e5d6f', timestamp: new Date().toISOString() };
+      return {
+        is_valid: true,
+        total_entries: 18,
+        genesis_hash: '0x7f83a91b2c4e5d6f',
+        message: 'SHA-256 hash chain verification passed. 0 cryptographic anomalies detected.',
+      };
     }
     return [
-      { id: 'aud-01', action: 'CLAIM_DISBURSED', actor: 'admin@mord.gov.in', details: 'Disbursed ₹45L to Ramesh Kumar', hash: '0x8f12a3', created_at: new Date().toISOString() },
+      {
+        id: 'aud-01',
+        timestamp: new Date(Date.now() - 3600000 * 2).toISOString(),
+        user_email: 'admin@mord.gov.in',
+        user_role: 'CENTRAL_MINISTRY',
+        action: 'CLAIM_DISBURSED',
+        entity_type: 'Compensation Award',
+        entity_id: 'cmp-01-ramesh-kumar',
+        prev_hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+        entry_hash: '8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4',
+      },
+      {
+        id: 'aud-02',
+        timestamp: new Date(Date.now() - 3600000 * 5).toISOString(),
+        user_email: 'jaipur@gov.in',
+        user_role: 'DISTRICT_AUTHORITY',
+        action: 'SECTION_19_DECLARATION',
+        entity_type: 'Land Parcel',
+        entity_id: 'pcl-101-amer',
+        prev_hash: '8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4',
+        entry_hash: '7a912b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a',
+      },
+      {
+        id: 'aud-03',
+        timestamp: new Date(Date.now() - 3600000 * 12).toISOString(),
+        user_email: 'auditor@mord.gov.in',
+        user_role: 'AUDITOR',
+        action: 'CHAIN_VERIFICATION',
+        entity_type: 'Audit Ledger',
+        entity_id: 'ledger-cag-2026',
+        prev_hash: '7a912b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a',
+        entry_hash: '4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c',
+      },
     ];
   }
 
   // 18. R&R
   if (path.startsWith('/api/rr/')) {
     return [
-      { id: 'rr-01', family_head: 'Ramcharan Sharma', members: 5, rehabilitation_grant: 500000, status: 'Housing Unit Allocated' },
+      {
+        id: 'rr-01',
+        head_of_household: 'Ramcharan Sharma',
+        family_size: 5,
+        annual_income: 145000,
+        alternative_land_provided: true,
+        employment_provided: true,
+        r_and_r_status: 'resettled',
+      },
+      {
+        id: 'rr-02',
+        head_of_household: 'Mohan Lal Verma',
+        family_size: 4,
+        annual_income: 120000,
+        alternative_land_provided: false,
+        employment_provided: false,
+        r_and_r_status: 'in_progress',
+      },
+      {
+        id: 'rr-03',
+        head_of_household: 'Savitri Devi',
+        family_size: 6,
+        annual_income: 98000,
+        alternative_land_provided: false,
+        employment_provided: false,
+        r_and_r_status: 'pending',
+      },
     ];
   }
 
