@@ -241,42 +241,6 @@ function getMockFallbackResponse(path: string, options: RequestInit): any {
         delay_probability: 0.58,
         risk_level: 'medium',
       },
-      {
-        id: '72345678-1234-5678-1234-567812345678',
-        project_code: 'TN-COAST-034',
-        name: 'Coastal Road Connectivity Project',
-        ministry: 'Ministry of Road Transport & Highways',
-        sector: 'Infrastructure',
-        state: 'Tamil Nadu',
-        district: 'Chengalpattu',
-        status: 'In Progress',
-        total_parcels: 340,
-        acquired_parcels: 306,
-        compensation_pending: 8,
-        disputed_parcels: 1,
-        rr_pending: 2,
-        risk_score: 0.18,
-        delay_probability: 0.18,
-        risk_level: 'low',
-      },
-      {
-        id: '82345678-1234-5678-1234-567812345678',
-        project_code: 'AP-VCIC-056',
-        name: 'Vizag-Chennai Industrial Corridor (VCIC)',
-        ministry: 'Ministry of Industry & Commerce',
-        sector: 'Industrial',
-        state: 'Andhra Pradesh',
-        district: 'Visakhapatnam',
-        status: 'In Progress',
-        total_parcels: 910,
-        acquired_parcels: 728,
-        compensation_pending: 22,
-        disputed_parcels: 3,
-        rr_pending: 9,
-        risk_score: 0.34,
-        delay_probability: 0.34,
-        risk_level: 'medium',
-      },
     ];
   }
 
@@ -288,11 +252,6 @@ function getMockFallbackResponse(path: string, options: RequestInit): any {
       { id: 'pcl-003', survey_number: '105/C', village_name: 'Chomu', district: 'Jaipur', state: 'Rajasthan', area_hectares: 3.1, status: 'In Progress', owner_name: 'Geeta Devi', compensation_amount: 5800000 },
       { id: 'pcl-004', survey_number: '108/1', village_name: 'Kukas', district: 'Jaipur', state: 'Rajasthan', area_hectares: 4.2, status: 'Acquired', owner_name: 'Vikram Singh', compensation_amount: 8200000 },
       { id: 'pcl-005', survey_number: '201/A', village_name: 'Sanand', district: 'Ahmedabad', state: 'Gujarat', area_hectares: 1.5, status: 'Possession Taken', owner_name: 'Kiritbhai Shah', compensation_amount: 4100000 },
-      { id: 'pcl-006', survey_number: '204/3', village_name: 'Bavla', district: 'Ahmedabad', state: 'Gujarat', area_hectares: 2.9, status: 'Acquired', owner_name: 'Meenaben Patel', compensation_amount: 6700000 },
-      { id: 'pcl-007', survey_number: '301/9', village_name: 'Hinjewadi', district: 'Pune', state: 'Maharashtra', area_hectares: 1.2, status: 'Disputed', owner_name: 'Anand Shinde', compensation_amount: 5200000 },
-      { id: 'pcl-008', survey_number: '305/D', village_name: 'Chakan', district: 'Pune', state: 'Maharashtra', area_hectares: 3.8, status: 'Possession Taken', owner_name: 'Prakash Deshmukh', compensation_amount: 9400000 },
-      { id: 'pcl-009', survey_number: '401/1', village_name: 'Karwi', district: 'Chitrakoot', state: 'Uttar Pradesh', area_hectares: 5.1, status: 'In Progress', owner_name: 'Ramsewak Yadav', compensation_amount: 4900000 },
-      { id: 'pcl-010', survey_number: '408/B', village_name: 'Manikpur', district: 'Chitrakoot', state: 'Uttar Pradesh', area_hectares: 2.2, status: 'Acquired', owner_name: 'Shivpal Singh', compensation_amount: 2800000 },
     ];
   }
 
@@ -303,53 +262,145 @@ function getMockFallbackResponse(path: string, options: RequestInit): any {
       overall_risk_score: 0.82,
       delay_probability: 0.82,
       expected_delay_days: 49,
+      risk_level: 'critical',
+      explanation: 'Project RJ-HWY-024 has 7 disputed parcels in high-traffic alignment zones, 42 pending CALA compensation vouchers, and 18 displaced families awaiting Schedule V housing plot allocation.',
+      contributing_factors: [
+        { factor: 'Disputed Title Suits', contribution_pct: 45, description: '7 land parcels pending high court litigation in Jaipur District' },
+        { factor: 'Compensation Pending', contribution_pct: 35, description: '42 awards approved but pending PFMS disbursement' },
+        { factor: 'R&R Housing Allocation', contribution_pct: 20, description: '18 families awaiting alternative site allocation in Amer' },
+      ],
       risk_factors: [
         { factor: 'Disputed Title Suits', impact: 'High', description: '7 land parcels pending high court litigation in Jaipur District' },
         { factor: 'R&R Resettlement Delay', impact: 'Medium', description: '18 families awaiting alternative site allocation in Amer Gram Sabha' },
-        { factor: 'Section 19 Declaration Delay', impact: 'Medium', description: 'CALA verification overdue by 14 days' },
       ],
     };
   }
 
-  // 8. AI Anomalies
+  // 8. AI Recommendations
+  if (path.startsWith('/api/ai/recommendations')) {
+    return {
+      recommendations: [
+        {
+          priority: 1,
+          priority_level: 'critical',
+          title: 'Fast-Track 7 Section 64 High Court Title Disputes',
+          reason: 'Disputed parcels 102/B & 105/C are directly blocking possession of 4.2 km highway corridor.',
+          expected_impact: 'Saves 29 days of project delay and ₹12.5 Cr in escalation penalties',
+        },
+        {
+          priority: 2,
+          priority_level: 'high',
+          title: 'Expedite PFMS Disbursement for 42 Verified Landowners',
+          reason: 'CALA awards approved but awaiting direct beneficiary bank transfers.',
+          expected_impact: 'Achieves 92% land possession completion',
+        },
+        {
+          priority: 3,
+          priority_level: 'medium',
+          title: 'Finalize Schedule V R&R Housing Allocation in Amer',
+          reason: '18 displaced families awaiting allotment of alternative residential plots.',
+          expected_impact: 'Resolves local Gram Sabha grievances',
+        },
+        {
+          priority: 4,
+          priority_level: 'low',
+          title: 'Deploy Sentinel-2 Satellite Change Detection Guard',
+          reason: 'Monitors 540 cadastral boundaries against commercial buffer encroachment.',
+          expected_impact: '100% boundary security protection',
+        },
+      ],
+    };
+  }
+
+  // 9. AI Anomalies
   if (path === '/api/ai/anomalies') {
     return [
       { id: 'anom-1', entity_type: 'Land Parcel', entity_id: 'pcl-001', anomaly_type: 'compensation_spike', severity: 'high', title: 'Unusual compensation value: ₹1.8Cr', description: 'Compensation 4.2x higher than district baseline average.', detected_value: '₹1.8 Cr', is_resolved: false, created_at: new Date().toISOString() },
       { id: 'anom-2', entity_type: 'Field Verification', entity_id: 'vrf-9912', anomaly_type: 'gps_mismatch', severity: 'medium', title: 'GPS mismatch on field verification', description: 'Field GPS tag was 320m outside recorded parcel boundary.', detected_value: '320m delta', is_resolved: false, created_at: new Date().toISOString() },
       { id: 'anom-3', entity_type: 'Land Parcel', entity_id: 'pcl-002', anomaly_type: 'duplicate_survey', severity: 'medium', title: 'Duplicate survey number flag', description: 'Identical survey number recorded across 2 overlapping projects.', detected_value: 'Survey 102/B', is_resolved: true, created_at: new Date().toISOString() },
-      { id: 'anom-4', entity_type: 'Workflow Task', entity_id: 'tsk-01', anomaly_type: 'approval_bottleneck', severity: 'high', title: 'CALA Section 11 approval delay', description: 'Approval pending for >21 days beyond statutory schedule.', detected_value: '21 days lag', is_resolved: false, created_at: new Date().toISOString() },
-      { id: 'anom-5', entity_type: 'Land Bank', entity_id: 'enc-01', anomaly_type: 'encroachment_detected', severity: 'critical', title: 'Satellite boundary alert on surplus bank', description: 'Sentinel-2 detected unauthorized concrete structure in buffer zone.', detected_value: '0.45 Ha', is_resolved: false, created_at: new Date().toISOString() },
-      { id: 'anom-6', entity_type: 'R&R Family', entity_id: 'rr-03', anomaly_type: 'income_mismatch', severity: 'low', title: 'Income verification outlier', description: 'Discrepancy between tehsildar income certificate and survey record.', detected_value: '₹98,000 delta', is_resolved: true, created_at: new Date().toISOString() },
     ];
   }
 
-  // 9. AI Copilot
+  // 10. AI Copilot
   if (path === '/api/ai/copilot') {
     return {
       response: 'BHUMI-AI Copilot Analysis: Based on statutory RFCTLARR Act 2013 rules, Section 11 preliminary notification requires 60 days for public objections. Proceeding with statutory award calculation for Jaipur district will reduce bottleneck risk by 35%.',
     };
   }
 
-  // 10. AI Simulation
+  // 11. AI Simulation
   if (path === '/api/ai/simulation') {
     return {
-      projected_delay_days: 24,
-      cost_impact_cr: 12.5,
-      mitigation_recommendation: 'Accelerate Section 19 declaration in Jaipur district to save 18 days.',
+      current: {
+        delay_probability_pct: 82,
+        expected_delay_days: 49,
+      },
+      projected: {
+        delay_probability_pct: 35,
+        expected_delay_days: 18,
+      },
+      risk_reduction_pct: 47,
+      days_saved: 31,
+      interventions: [
+        { action: 'Resolve 7 High Court Title Disputes', impact: 'High priority corridor unlocked', days_saved: 18 },
+        { action: 'Expedite 42 Pending Compensation Vouchers', impact: '92% land possession acquired', days_saved: 9 },
+        { action: 'Complete R&R Housing Allocation for 18 Families', impact: 'Gram Sabha grievance cleared', days_saved: 4 },
+      ],
+      disclaimer: 'Simulation estimates are calibrated via RFCTLARR Act 2013 statistical historical models.',
     };
   }
 
-  // 11. Workflow & Tasks
+  // 12. Corridor Comparison
+  if (path.startsWith('/api/ai/corridors/')) {
+    return {
+      corridors: [
+        {
+          alignment_id: 'align-01',
+          name: 'Alignment A (NH-48 Bypass)',
+          description: 'Optimal northern bypass alignment avoiding densely populated Amer municipal area.',
+          suitability_score: 94,
+          length_km: 34.2,
+          land_required_hectares: 120.5,
+          estimated_cost_crore: 450.0,
+          forest_land_hectares: 0,
+          displaced_families: 18,
+          is_recommended: true,
+        },
+        {
+          alignment_id: 'align-02',
+          name: 'Alignment B (Direct Express)',
+          description: 'Shorter central route through existing right-of-way, higher residential displacement.',
+          suitability_score: 72,
+          length_km: 29.8,
+          land_required_hectares: 145.0,
+          estimated_cost_crore: 580.0,
+          forest_land_hectares: 2.4,
+          displaced_families: 64,
+          is_recommended: false,
+        },
+        {
+          alignment_id: 'align-03',
+          name: 'Alignment C (Southern Arc)',
+          description: 'Southern peripheral route with higher agricultural land acquisition cost.',
+          suitability_score: 68,
+          length_km: 38.5,
+          land_required_hectares: 160.2,
+          estimated_cost_crore: 510.0,
+          forest_land_hectares: 0,
+          displaced_families: 42,
+          is_recommended: false,
+        },
+      ],
+    };
+  }
+
+  // 13. Workflow & Tasks
   if (path.startsWith('/api/workflow/tasks')) {
     return [
-      { id: 'tsk-01', title: 'Section 11 Notification Verification', assigned_to: 'CALA Jaipur', status: 'Pending', due_date: '2026-09-15', priority: 'High' },
-      { id: 'tsk-02', title: 'SIA Report Approval', assigned_to: 'State Expert Committee', status: 'Completed', due_date: '2026-09-01', priority: 'Medium' },
-      { id: 'tsk-03', title: 'Gram Sabha Public Hearing Quorum Audit', assigned_to: 'District Collector', status: 'Pending', due_date: '2026-09-20', priority: 'High' },
-      { id: 'tsk-04', title: 'Section 19 Declaration Publication', assigned_to: 'CALA Ahmedabad', status: 'In Progress', due_date: '2026-09-18', priority: 'High' },
-      { id: 'tsk-05', title: 'PFMS Escrow Account Setup', assigned_to: 'Ministry Finance Wing', status: 'Completed', due_date: '2026-08-25', priority: 'Medium' },
-      { id: 'tsk-06', title: 'Cadastral Boundary Map Digitization', assigned_to: 'NIC DILRMP Officer', status: 'In Progress', due_date: '2026-09-22', priority: 'Low' },
-      { id: 'tsk-07', title: 'Section 26 Solatium Rate Determination', assigned_to: 'Tehsildar Amer', status: 'Pending', due_date: '2026-09-28', priority: 'High' },
-      { id: 'tsk-08', title: 'R&R Housing Site Allocation Notice', assigned_to: 'R&R Director', status: 'In Progress', due_date: '2026-09-25', priority: 'Medium' },
+      { id: 'tsk-01', title: 'Section 11 Notification Verification', assigned_to: 'CALA Jaipur', status: 'Pending', due_date: '2026-09-15', priority: 'High', stage: 'Notice' },
+      { id: 'tsk-02', title: 'SIA Report Approval', assigned_to: 'State Expert Committee', status: 'Completed', due_date: '2026-09-01', priority: 'Medium', stage: 'SIA' },
+      { id: 'tsk-03', title: 'Gram Sabha Public Hearing Quorum Audit', assigned_to: 'District Collector', status: 'Pending', due_date: '2026-09-20', priority: 'High', stage: 'Objections' },
+      { id: 'tsk-04', title: 'Section 19 Declaration Publication', assigned_to: 'CALA Ahmedabad', status: 'In Progress', due_date: '2026-09-18', priority: 'High', stage: 'Award' },
     ];
   }
   if (path === '/api/workflow/rules') {
@@ -359,21 +410,16 @@ function getMockFallbackResponse(path: string, options: RequestInit): any {
     return { success: true, message: 'Workflow stage updated successfully' };
   }
 
-  // 12. Compensation
+  // 14. Compensation
   if (path.startsWith('/api/compensation/')) {
     return [
       { id: 'cmp-01', parcel_id: 'pcl-001', award_amount: 4500000, status: 'disbursed', payment_reference: 'PFMS-982103', beneficiary_name: 'Ramesh Kumar', beneficiary_account: 'SBI-****-8921', disbursed_amount: 4500000, disbursed_at: '2026-08-20T10:00:00.000Z' },
       { id: 'cmp-02', parcel_id: 'pcl-002', award_amount: 3200000, status: 'under_verification', payment_reference: null, beneficiary_name: 'Suresh Patel', beneficiary_account: 'HDFC-****-4102', disbursed_amount: 3200000 },
       { id: 'cmp-03', parcel_id: 'pcl-003', award_amount: 5800000, status: 'pending', payment_reference: null, beneficiary_name: 'Geeta Devi', beneficiary_account: 'PNB-****-1093', disbursed_amount: 5800000 },
-      { id: 'cmp-04', parcel_id: 'pcl-004', award_amount: 8200000, status: 'disbursed', payment_reference: 'PFMS-982144', beneficiary_name: 'Vikram Singh', beneficiary_account: 'ICICI-****-9921', disbursed_amount: 8200000, disbursed_at: '2026-08-25T11:30:00.000Z' },
-      { id: 'cmp-05', parcel_id: 'pcl-005', award_amount: 4100000, status: 'disbursed', payment_reference: 'PFMS-982188', beneficiary_name: 'Kiritbhai Shah', beneficiary_account: 'BOB-****-3310', disbursed_amount: 4100000, disbursed_at: '2026-08-28T14:15:00.000Z' },
-      { id: 'cmp-06', parcel_id: 'pcl-006', award_amount: 6700000, status: 'under_verification', payment_reference: null, beneficiary_name: 'Meenaben Patel', beneficiary_account: 'AXIS-****-7721', disbursed_amount: 6700000 },
-      { id: 'cmp-07', parcel_id: 'pcl-007', award_amount: 5200000, status: 'pending', payment_reference: null, beneficiary_name: 'Anand Shinde', beneficiary_account: 'SBI-****-5521', disbursed_amount: 5200000 },
-      { id: 'cmp-08', parcel_id: 'pcl-008', award_amount: 9400000, status: 'disbursed', payment_reference: 'PFMS-982210', beneficiary_name: 'Prakash Deshmukh', beneficiary_account: 'MAH-****-4419', disbursed_amount: 9400000, disbursed_at: '2026-09-02T09:45:00.000Z' },
     ];
   }
 
-  // 13. Disputes
+  // 15. Disputes
   if (path.startsWith('/api/disputes/')) {
     return [
       {
@@ -404,68 +450,19 @@ function getMockFallbackResponse(path: string, options: RequestInit): any {
         hearing_date: '2026-08-10T10:00:00.000Z',
         resolved_at: '2026-08-15T14:00:00.000Z',
       },
-      {
-        id: 'dsp-04',
-        title: 'Gram Sabha SIA Objections (Chomu Village)',
-        description: 'Objection filed regarding public hearing quorum and environmental mitigation coverage.',
-        dispute_type: 'SIA Procedure',
-        status: 'open',
-        court_case_number: 'HC-RJ-2026/9021',
-        hearing_date: '2026-09-30T10:30:00.000Z',
-      },
-      {
-        id: 'dsp-05',
-        title: 'Market Rate Enhancement Reference (Sec 64)',
-        description: 'Landowners petitioning LARR Authority for higher multiplication factor in rural zone.',
-        dispute_type: 'Market Rate Challenge',
-        status: 'under_review',
-        court_case_number: 'LARR-AUTH-2026/502',
-        hearing_date: '2026-10-05T11:30:00.000Z',
-      },
-      {
-        id: 'dsp-06',
-        title: 'Tenancy Rights & Cultivator Claim (Sanand)',
-        description: 'Registered tenant farmer claiming 25% share of statutory award under Section 31.',
-        dispute_type: 'Tenancy Claim',
-        status: 'open',
-        court_case_number: 'DC-AHM-2026/301',
-        hearing_date: '2026-10-02T10:00:00.000Z',
-      },
-      {
-        id: 'dsp-07',
-        title: 'Industrial Buffer Zone Boundary Suit',
-        description: 'Chakan MIDC boundary verification suit filed in District Civil Court.',
-        dispute_type: 'Boundary Overlap',
-        status: 'resolved',
-        court_case_number: 'CC-PUNE-2026/781',
-        hearing_date: '2026-08-20T10:00:00.000Z',
-        resolved_at: '2026-08-28T16:00:00.000Z',
-      },
-      {
-        id: 'dsp-08',
-        title: 'Gram Panchayat Resettlement Land Dispute',
-        description: 'Panchayat land allocation dispute for displaced tribal families under Schedule V.',
-        dispute_type: 'Resettlement Site',
-        status: 'open',
-        court_case_number: 'HC-UP-2026/1102',
-        hearing_date: '2026-10-12T11:00:00.000Z',
-      },
     ];
   }
 
-  // 14. Documents
+  // 16. Documents
   if (path.startsWith('/api/documents/')) {
     return [
-      { id: 'doc-01', file_name: 'Section_11_Gazette_Notice_NH48.pdf', doc_type: 'Statutory Notice', verified: true, uploaded_at: new Date(Date.now() - 86400000 * 5).toISOString() },
-      { id: 'doc-02', file_name: 'SIA_Public_Hearing_Report_Amer.pdf', doc_type: 'SIA Study', verified: true, uploaded_at: new Date(Date.now() - 86400000 * 12).toISOString() },
-      { id: 'doc-03', file_name: 'Section_19_Declaration_Jaipur.pdf', doc_type: 'Statutory Declaration', verified: true, uploaded_at: new Date(Date.now() - 86400000 * 3).toISOString() },
-      { id: 'doc-04', file_name: 'Section_26_Market_Rate_Schedule.pdf', doc_type: 'Valuation Schedule', verified: true, uploaded_at: new Date(Date.now() - 86400000 * 15).toISOString() },
-      { id: 'doc-05', file_name: 'PFMS_Escrow_Disbursement_Voucher_01.pdf', doc_type: 'Financial Voucher', verified: true, uploaded_at: new Date(Date.now() - 86400000 * 2).toISOString() },
-      { id: 'doc-06', file_name: 'Environmental_Clearance_Parivesh.pdf', doc_type: 'Environmental Clearance', verified: true, uploaded_at: new Date(Date.now() - 86400000 * 20).toISOString() },
+      { id: 'doc-01', title: 'Section_11_Gazette_Notice_NH48.pdf', file_name: 'Section_11_Gazette_Notice_NH48.pdf', document_type: 'Statutory Notice', status: 'approved', ai_confidence_score: 0.98, version: '1.0', uploaded_at: new Date().toISOString() },
+      { id: 'doc-02', title: 'SIA_Public_Hearing_Report_Amer.pdf', file_name: 'SIA_Public_Hearing_Report_Amer.pdf', document_type: 'SIA Study', status: 'approved', ai_confidence_score: 0.95, version: '1.2', uploaded_at: new Date().toISOString() },
+      { id: 'doc-03', title: 'Section_19_Declaration_Jaipur.pdf', file_name: 'Section_19_Declaration_Jaipur.pdf', document_type: 'Statutory Declaration', status: 'under_review', ai_confidence_score: 0.91, version: '1.0', uploaded_at: new Date().toISOString() },
     ];
   }
 
-  // 15. Land Bank & Encroachments
+  // 17. Land Bank & Encroachments
   if (path === '/api/land-bank/summary') {
     return { total_surplus_hectares: 4820, total_parcels: 142, leased_hectares: 630, encroachment_cases: 6 };
   }
@@ -493,54 +490,10 @@ function getMockFallbackResponse(path: string, options: RequestInit): any {
         detection_source: 'field_patrol',
         status: 'detected',
       },
-      {
-        id: 'enc-03',
-        survey_number: '108/2',
-        village: 'Kukas',
-        district: 'Jaipur',
-        encroachment_type: 'commercial_dumping',
-        description: 'Illegal commercial debris dumping cleared by District Revenue Collector.',
-        encroached_area_hectares: 0.30,
-        detection_source: 'satellite',
-        status: 'cleared',
-      },
-      {
-        id: 'enc-04',
-        survey_number: '202/B',
-        village: 'Sanand',
-        district: 'Ahmedabad',
-        encroachment_type: 'boundary_fence_extension',
-        description: 'Private industrial shed extension 18 meters past cadastral boundary line.',
-        encroached_area_hectares: 0.60,
-        detection_source: 'satellite',
-        status: 'notice_issued',
-      },
-      {
-        id: 'enc-05',
-        survey_number: '304/1',
-        village: 'Chakan',
-        district: 'Pune',
-        encroachment_type: 'unauthorized_construction',
-        description: 'Temporary tin shed commercial workshop setup along freight corridor margin.',
-        encroached_area_hectares: 0.25,
-        detection_source: 'field_patrol',
-        status: 'detected',
-      },
-      {
-        id: 'enc-06',
-        survey_number: '405/D',
-        village: 'Karwi',
-        district: 'Chitrakoot',
-        encroachment_type: 'agricultural_squatting',
-        description: 'Encroachment eviction executed by Tehsildar squad under CrPC Sec 133.',
-        encroached_area_hectares: 1.10,
-        detection_source: 'field_patrol',
-        status: 'cleared',
-      },
     ];
   }
 
-  // 16. Integrations & Notifications
+  // 18. Integrations & Notifications
   if (path === '/api/integrations/status') {
     return { pfms: 'Connected', bhunaksha: 'Connected', parivesh: 'Connected', e_courts: 'Connected' };
   }
@@ -548,13 +501,10 @@ function getMockFallbackResponse(path: string, options: RequestInit): any {
     return [
       { id: 'notif-01', title: 'Award Disbursed via PFMS', message: 'PFMS payment of ₹45 Lakh processed for Parcel 101/A (Ramesh Kumar)', is_read: false },
       { id: 'notif-02', title: 'Dispute Hearing Scheduled', message: 'High Court title suit HC-RJ-2026/8912 scheduled for Sept 24', is_read: false },
-      { id: 'notif-03', title: 'Satellite Sentinel Alert', message: 'NDVI change algorithm flagged 0.45 Ha perimeter anomaly in Amer', is_read: false },
-      { id: 'notif-04', title: 'Section 19 Declaration Approved', message: 'Jaipur District Collector approved Section 19 declaration for NH-48', is_read: true },
-      { id: 'notif-05', title: 'Cryptographic Audit Link Verified', message: 'CAG Hash Chain verification completed: 18 blocks validated', is_read: true },
     ];
   }
 
-  // 17. Audit Log
+  // 19. Audit Log
   if (path.startsWith('/api/audit/')) {
     if (path === '/api/audit/verify') {
       return {
@@ -576,54 +526,10 @@ function getMockFallbackResponse(path: string, options: RequestInit): any {
         prev_hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
         entry_hash: '8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4',
       },
-      {
-        id: 'aud-02',
-        timestamp: new Date(Date.now() - 3600000 * 5).toISOString(),
-        user_email: 'jaipur@gov.in',
-        user_role: 'DISTRICT_AUTHORITY',
-        action: 'SECTION_19_DECLARATION',
-        entity_type: 'Land Parcel',
-        entity_id: 'pcl-101-amer',
-        prev_hash: '8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4',
-        entry_hash: '7a912b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a',
-      },
-      {
-        id: 'aud-03',
-        timestamp: new Date(Date.now() - 3600000 * 12).toISOString(),
-        user_email: 'auditor@mord.gov.in',
-        user_role: 'AUDITOR',
-        action: 'CHAIN_VERIFICATION',
-        entity_type: 'Audit Ledger',
-        entity_id: 'ledger-cag-2026',
-        prev_hash: '7a912b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a',
-        entry_hash: '4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c',
-      },
-      {
-        id: 'aud-04',
-        timestamp: new Date(Date.now() - 3600000 * 18).toISOString(),
-        user_email: 'rajasthan@gov.in',
-        user_role: 'STATE_GOVT',
-        action: 'SIA_REPORT_APPROVAL',
-        entity_type: 'Project SIA',
-        entity_id: 'sia-rj-hwy-024',
-        prev_hash: '4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c',
-        entry_hash: '9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1f0e9d8c',
-      },
-      {
-        id: 'aud-05',
-        timestamp: new Date(Date.now() - 3600000 * 24).toISOString(),
-        user_email: 'rj-hwy@nhia.in',
-        user_role: 'PROJECT_AGENCY',
-        action: 'PROJECT_INITIATION',
-        entity_type: 'Project Master',
-        entity_id: 'RJ-HWY-024',
-        prev_hash: '9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1f0e9d8c',
-        entry_hash: '1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b',
-      },
     ];
   }
 
-  // 18. R&R
+  // 20. R&R
   if (path.startsWith('/api/rr/')) {
     return [
       {
@@ -644,51 +550,15 @@ function getMockFallbackResponse(path: string, options: RequestInit): any {
         employment_provided: false,
         r_and_r_status: 'in_progress',
       },
-      {
-        id: 'rr-03',
-        head_of_household: 'Savitri Devi',
-        family_size: 6,
-        annual_income: 98000,
-        alternative_land_provided: false,
-        employment_provided: false,
-        r_and_r_status: 'pending',
-      },
-      {
-        id: 'rr-04',
-        head_of_household: 'Bhagwan Das Saini',
-        family_size: 4,
-        annual_income: 115000,
-        alternative_land_provided: true,
-        employment_provided: false,
-        r_and_r_status: 'in_progress',
-      },
-      {
-        id: 'rr-05',
-        head_of_household: 'Kalyan Singh Rathore',
-        family_size: 7,
-        annual_income: 180000,
-        alternative_land_provided: true,
-        employment_provided: true,
-        r_and_r_status: 'resettled',
-      },
-      {
-        id: 'rr-06',
-        head_of_household: 'Manju Devi Yadav',
-        family_size: 3,
-        annual_income: 85000,
-        alternative_land_provided: false,
-        employment_provided: false,
-        r_and_r_status: 'pending',
-      },
     ];
   }
 
-  // 19. Field Verification
+  // 21. Field Verification
   if (path.startsWith('/api/field/')) {
     return { success: true, verification_id: 'vrf-9912' };
   }
 
-  // 20. Citizen Portal
+  // 22. Citizen Portal
   if (path.startsWith('/api/citizen/')) {
     if (path.includes('/auth/otp/send')) {
       return { success: true, message: 'OTP sent to mobile number' };
@@ -709,8 +579,6 @@ function getMockFallbackResponse(path: string, options: RequestInit): any {
     }
     return [
       { survey_number: '101/A', village: 'Amer', district: 'Jaipur', status: 'Award Disbursed' },
-      { survey_number: '102/B', village: 'Amer', district: 'Jaipur', status: 'Dispute Hearing Pending' },
-      { survey_number: '105/C', village: 'Chomu', district: 'Jaipur', status: 'SIA Survey Complete' },
     ];
   }
 
