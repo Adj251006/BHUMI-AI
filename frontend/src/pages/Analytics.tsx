@@ -149,11 +149,18 @@ export default function Analytics() {
           </thead>
           <tbody>
             {anomalies.map((a: any) => (
-              <tr key={a.id}>
-                <td><div style={{ fontWeight: 600, fontSize: 12 }}>{a.entity_type}</div><div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{a.entity_id?.slice(0, 12)}...</div></td>
-                <td><span className="badge info" style={{ fontSize: 10 }}>{a.anomaly_type.replace(/_/g, ' ')}</span></td>
-                <td><span className={`badge ${a.severity}`}>{a.severity}</span></td>
-                <td style={{ fontSize: 12, maxWidth: 280 }}>{a.description}</td>
+              <tr key={a.id || Math.random()}>
+                <td>
+                  <div style={{ fontWeight: 600, fontSize: 12 }}>{a.entity_type || 'Land Parcel'}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{(a.entity_id || 'pcl-001').slice(0, 12)}</div>
+                </td>
+                <td>
+                  <span className="badge info" style={{ fontSize: 10 }}>
+                    {(a.anomaly_type || 'unusual_value').replace(/_/g, ' ')}
+                  </span>
+                </td>
+                <td><span className={`badge ${a.severity || 'medium'}`}>{a.severity || 'medium'}</span></td>
+                <td style={{ fontSize: 12, maxWidth: 280 }}>{a.description || a.title || 'Statutory anomaly detected'}</td>
                 <td style={{ fontSize: 12, fontFamily: 'monospace', color: 'var(--saffron)' }}>{a.detected_value || '—'}</td>
                 <td><span className={`badge ${a.is_resolved ? 'resolved' : 'open'}`}>{a.is_resolved ? 'Resolved' : 'Open'}</span></td>
               </tr>
