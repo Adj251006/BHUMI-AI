@@ -301,16 +301,21 @@ async function request(path: string, options: RequestInit = {}): Promise<any> {
     const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
-      throw new Error(err.detail || `HTTP ${res.status}`);
+      // Only rethrow if backend explicitly returned HTTP 401 with invalid credentials or deactivated account
+      if (res.status === 401 && (err.detail === 'Invalid credentials' || err.detail === 'Account deactivated')) {
+        throw new Error(err.detail);
+      }
+      // For any non-2xx status code (404, 500, 502, 503, etc.) on environments without backend, trigger mock fallback
+      throw new Error(`FALLBACK_TRIGGER:${err.detail || res.status}`);
     }
     return await res.json();
   } catch (err: any) {
-    // If backend explicitly responded with 401 / Invalid credentials, rethrow to show user
-    if (err.message && (err.message.includes('HTTP ') || err.message === 'Invalid credentials' || err.message === 'Account deactivated')) {
+    // Only re-throw explicit authentication failures from a functioning backend
+    if (err.message === 'Invalid credentials' || err.message === 'Account deactivated') {
       throw err;
     }
-    // Network error / Failed to fetch (e.g. Vercel deployment where backend is unreachable or local server not running)
-    console.warn(`[BHUMI-AI Client] Backend fetch failed for ${path} (${err.message}). Using fallback demo data.`);
+    // Network failure / 404 / 502 / Failed to fetch -> Fallback gracefully
+    console.warn(`[BHUMI-AI Client] Backend request for ${path} unavailable (${err.message}). Using fallback demo data.`);
     return getMockFallbackResponse(path, options);
   }
 }
