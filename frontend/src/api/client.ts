@@ -103,6 +103,22 @@ function getMockFallbackResponse(path: string, options: RequestInit): any {
       acquisition_percentage: 82,
       compensation_paid_crore: 840,
       disputed_parcels: 10,
+      district_breakdown: [
+        { district: 'Jaipur', projects: 3, active: 2 },
+        { district: 'Jodhpur', projects: 2, active: 2 },
+        { district: 'Udaipur', projects: 2, active: 1 },
+        { district: 'Ajmer', projects: 1, active: 1 },
+      ],
+      projects: [
+        { id: '12345678-1234-5678-1234-567812345678', name: 'Delhi-Jaipur Highway Expansion (NH-48)', district: 'Jaipur', status: 'active' },
+        { id: 'proj-rj-002', name: 'Jaipur Outer Ring Road Phase II', district: 'Jaipur', status: 'active' },
+        { id: 'proj-rj-003', name: 'Jodhpur Solar Park Feeder Line', district: 'Jodhpur', status: 'active' },
+        { id: 'proj-rj-004', name: 'Udaipur Smart Logistics Hub', district: 'Udaipur', status: 'active' },
+        { id: 'proj-rj-005', name: 'Ajmer-Pushkar Rail Link', district: 'Ajmer', status: 'active' },
+        { id: 'proj-rj-006', name: 'Kota Industrial Corridor Access Road', district: 'Kota', status: 'completed' },
+        { id: 'proj-rj-007', name: 'Bikaner Renewable Energy Park Freight Line', district: 'Bikaner', status: 'active' },
+        { id: 'proj-rj-008', name: 'Alwar Agro-Industrial Logistics Expressway', district: 'Alwar', status: 'completed' },
+      ],
     };
   }
 
